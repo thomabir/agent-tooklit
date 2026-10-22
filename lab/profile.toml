@@ -5,7 +5,22 @@ bambu_studio = "/Applications/BambuStudio.app/Contents/MacOS/BambuStudio"
 bambu_profiles = "/Applications/BambuStudio.app/Contents/Resources/profiles/BBL"
 blender = "/Applications/Blender.app/Contents/MacOS/Blender"
 kicad_cli = "/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli"
+kicad_python = "/Applications/KiCad/KiCad.app/Contents/Frameworks/Python.framework/Versions/Current/bin/python3"
+ibom = "/Users/thomabir/Documents/KiCad/10.0/3rdparty/plugins/org_openscopeproject_InteractiveHtmlBom/generate_interactive_bom.py"
 label_font = "/System/Library/Fonts/Supplemental/Arial Black.ttf"
+
+[kicad]
+author = "Thomas Birbacher"  # title block field "company"
+gnd_nets = ["GND"]
+mounting_hole_grid = 1.0  # mm, relative to the outline bounding box corner
+corner_max_turn = 30.0  # deg, larger turn at an outline joint = sharp corner
+
+# Symbol field names. Roles: manufacturer, mpn, digikey (link), mouser (link).
+[kicad.fields]
+manufacturer = "Manufacturer"
+mpn = "MPN"
+digikey = "DigiKey"
+mouser = "Mouser"
 
 [printer]
 bambu_machine = "Bambu Lab X1 Carbon 0.6 nozzle"

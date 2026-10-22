@@ -4,6 +4,7 @@ Entry point for any coding agent. Claude Code reads `CLAUDE.md`, which refers he
 
 ## Use in a hardware project
 - Read the skill for the task before you start: `skills/<name>/SKILL.md`.
+  - `kicad-project`: KiCad design rules, outputs, README, release.
   - `enclosure-design`: case for a KiCad PCB.
   - `bambu-print-prep`: Bambu Studio print project, inlaid labels, slice verification.
   - `exploded-render`: Blender exploded views.
