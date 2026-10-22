@@ -1,0 +1,11 @@
+{
+  "name": "thomabir",
+  "owner": {"name": "Thomas Birbacher"},
+  "plugins": [
+    {
+      "name": "agent-toolkit",
+      "source": "./",
+      "description": "Hardware-project processes: enclosure design, Bambu print preparation and verification, exploded renders, retro."
+    }
+  ]
+}

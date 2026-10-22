@@ -1,0 +1,36 @@
+# Lab equipment and defaults. Read by hwkit.lab.load(). Override the file with the environment variable HWKIT_LAB.
+
+[tools]
+bambu_studio = "/Applications/BambuStudio.app/Contents/MacOS/BambuStudio"
+bambu_profiles = "/Applications/BambuStudio.app/Contents/Resources/profiles/BBL"
+blender = "/Applications/Blender.app/Contents/MacOS/Blender"
+kicad_cli = "/Applications/KiCad/KiCad.app/Contents/MacOS/kicad-cli"
+label_font = "/System/Library/Fonts/Supplemental/Arial Black.ttf"
+
+[printer]
+bambu_machine = "Bambu Lab X1 Carbon 0.6 nozzle"
+nozzle_d = 0.6  # mm
+plate_center = [128.0, 128.0]  # mm
+
+[process]
+bambu_process = "0.30mm Standard @BBL X1C 0.6 nozzle"
+
+# Project settings that differ from the system presets. Preset keys are also entered in different_settings_to_system.
+[process.choices]
+sparse_infill_pattern = "gyroid"  # functional parts
+curr_bed_type = "Textured PEI Plate"  # sets the bed temperature
+
+# Filament 1, 2, ... in this order.
+[[filaments]]
+role = "body"
+bambu = "Bambu PLA Tough+ @BBL X1C 0.6 nozzle"
+colour = "#3C3C3C"
+
+[[filaments]]
+role = "label"
+bambu = "Bambu PLA Basic @BBL X1C 0.6 nozzle"
+colour = "#FFFFFF"
+
+[flush]
+volumes = [[0, 600], [200, 0]]  # mm3, row = from filament, column = to filament
+vector_entry = "140"
