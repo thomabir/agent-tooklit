@@ -94,3 +94,10 @@ Source project: path or repository and commit.
 - Freestyle needs a lineset with a linestyle, else a Python error in each render.
 - KiCad GLB is in metres in the STEP frame.
 - Source: 44.006, 2026-10-22.
+
+## L17 Snap hook does not latch
+- Symptom: weak snap; hooks stop short of the windows; lid pulls off without pressing the hooks.
+- Cause: vertical latch clearance (hook retention face to window top) 0.1 mm, layer height 0.3 mm. The lid stop surfaces and the latch surfaces are rounded to layer boundaries; each of the 4 surfaces can move by up to ½ layer. Overhang sag of the window top and of the retention face adds to this.
+- Proof: G-code (0.3 mm layers): base shoulder at z = 8.9 mm, lid skirt bottom at z = 8.8 mm (design 8.75 mm both). The lid sits 0.1 mm high; this is the full clearance. Overhang sag not measured.
+- Fix: vertical latch clearance ≥ 2 × layer height. Check with `hwkit.fit.report(..., latches=..., latch_margin=2 × layer height)`. Put the latch and stop surfaces on layer boundaries of their part.
+- Source: 44.006, print 2026-10-22.

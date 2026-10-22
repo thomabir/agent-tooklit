@@ -47,11 +47,14 @@ def _overlap(a, b):
     return v.Volume() if v is not None else 0.0
 
 
-def report(base, lid, pcb, flexing=None):
-    """Print interference: assembled, PCB path into base, lid path onto base. flexing: lid features allowed to touch the base on the path (snap hooks).
+def report(base, lid, pcb, flexing=None, latches=None, latch_margin=0.0):
+    """Print interference: assembled, PCB path into base, lid path onto base, latch clearance. flexing: lid features allowed to touch the base on the path (snap hooks).
 
+    latches: lid hooks with a 90° retention face. With the lid latch_margin above its seat, they must not touch the base (L17).
     Returns the list of unexpected interferences.
     """
+    if latch_margin < 0:
+        raise ValueError("latch_margin must be >= 0")
     bad = []
 
     def check(title, pairs):
@@ -75,4 +78,6 @@ def report(base, lid, pcb, flexing=None):
             other = _overlap(moved.cut(flexing.translate(cq.Vector(0, 0, dz))), base)
         pairs = [(n, _overlap(moved, s)) for n, s in pcb.items()] + [("base at flexing features (expected)", contact - other), ("base, other", other)]
         check(f"lid {dz} mm above seat vs PCB and base", pairs)
+    if latches is not None:
+        check(f"lid {latch_margin} mm above seat, latches vs base", [("latches", _overlap(latches.translate(cq.Vector(0, 0, latch_margin)), base))])
     return bad
