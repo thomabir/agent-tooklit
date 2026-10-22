@@ -62,6 +62,35 @@ def _bambu_verify(a, lab):
     return 1 if issues else 0
 
 
+def _kicad_check(a, lab):
+    from .kicad import checks, sexp
+    from .kicad.export import Project, bom, erc_drc
+
+    k = lab["kicad"]
+    project = Project(a.project)
+    work = Path(a.work)
+    blocks = {f.name: checks.title_block(sexp.load(f)) for f in project.sheets()}
+    pcb = sexp.load(project.pcb)
+    blocks[project.pcb.name] = checks.title_block(pcb)
+    results = [
+        checks.check_title_blocks(blocks, k.get("author")),
+        checks.check_board(pcb, k["gnd_nets"], k["mounting_hole_grid"], k["corner_max_turn"], blocks[project.pcb.name]),
+        checks.check_bom(bom(lab, project, work / "bom.csv", k["fields"]), k["fields"]),
+        erc_drc(lab, project, work),
+    ]
+    return _report([line for r in results for line in r[0]], [i for r in results for i in r[1]])
+
+
+def _kicad_outputs(a, lab):
+    from .kicad import checks, sexp
+    from .kicad.export import Project, export_all
+
+    project = Project(a.project)
+    rev = checks.title_block(sexp.load(project.pcb))["rev"]
+    for f in export_all(lab, project, Path(a.out), lab["kicad"]["fields"], a.boards, rev):
+        print(f)
+
+
 def _lab_show(a, lab):
     print(f"# {labmod.profile_path()}")
     print(json.dumps(lab, indent=1))
@@ -104,6 +133,17 @@ def main(argv=None):
     c.add_argument("--body", required=True, help="body STL with the inlay pockets, print orientation")
     c.add_argument("--out", required=True)
     c.set_defaults(func=_bambu_verify)
+
+    k = groups.add_parser("kicad", help="KiCad project checks and outputs").add_subparsers(required=True)
+    c = k.add_parser("check", help="title blocks, outline, mounting holes, ground pour, BOM fields, ERC, DRC")
+    c.add_argument("project", help=".kicad_pro file")
+    c.add_argument("--work", default="build/kicad-check", help="folder for BOM and ERC/DRC reports")
+    c.set_defaults(func=_kicad_check)
+    c = k.add_parser("outputs", help="schematic and board PDFs, renders, Gerbers, drill, positions, BOM, iBOM, order files")
+    c.add_argument("project", help=".kicad_pro file")
+    c.add_argument("--out", default="outputs")
+    c.add_argument("--boards", type=int, default=1, help="number of boards for the order files")
+    c.set_defaults(func=_kicad_outputs)
 
     a = p.parse_args(argv)
     sys.exit(a.func(a, labmod.load()) or 0)

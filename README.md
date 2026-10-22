@@ -68,6 +68,8 @@ Agent use: ask Claude Code for "a case for this KiCad board" or "prepare the pri
 
 ```sh
 hwkit lab show
+hwkit kicad check <project.kicad_pro>
+hwkit kicad outputs <project.kicad_pro> --out outputs --boards <n>
 hwkit bambu flatten --out build/bambu-profiles
 hwkit bambu template --profiles build/bambu-profiles --out bambu-project-settings.json
 hwkit bambu verify <project.3mf> --labels <labels.stl> --body <body.stl> --out build/verify
