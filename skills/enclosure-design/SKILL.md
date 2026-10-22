@@ -20,10 +20,12 @@ Toolkit: `github.com/thomabir/agent-tooklit`, local `~/code/agent-toolkit` (pack
 - Lap joint: lid skirt outside, base lip inside, 0.15 mm lateral clearance.
 - Standoffs with locating pins in the base, hold-down posts in the lid.
 - Cantilever snap hooks on the lid into base windows; bending strain ≤ approx. 1.3 % (`1.5 t y / L²`). Vertical arms print with layers across the bend.
+- Vertical latch clearance (hook retention face to window top) ≥ 2 × layer height (L17). Put the latch surfaces and the lid stop surfaces on layer boundaries, measured from the plate face of their part.
+- Before the full print: test print of one hook and its window.
 - Collars behind panel connectors take the plug force.
 - Labels on the face that prints on the plate (see bambu-print-prep).
 
 ## Verify
-- `hwkit.fit.report(base, lid, pcb, flexing=hook_arms)`: no interference except "expected" at flexing features.
+- `hwkit.fit.report(base, lid, pcb, flexing=hook_arms, latches=hooks_90deg, latch_margin=2 * layer_height)`: no interference except "expected" at flexing features.
 - Render: see exploded-render.
 - Print preparation: see bambu-print-prep.
