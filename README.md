@@ -31,6 +31,39 @@ Python package in a project (pin a tag):
 uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.1.0"
 ```
 
+## Example
+
+Plate with inlaid label → Bambu project → slice verification. Full script: `examples/inlay_lid.py`.
+
+```python
+from hwkit import lab, labels
+from hwkit.bambu import INLAY_OBJECT_SETTINGS
+from hwkit.bambu.project import label_first_plate_settings, write_project
+from hwkit.outputs import OutputGuard
+
+LAB = lab.load()
+RULES = labels.InlayRules(nozzle_d=LAB["printer"]["nozzle_d"])
+plate = cq.Workplane().box(40, 30, 3).translate((0, 0, 1.5))
+label = labels.text("OUT", 7.0, 0, 0, 3.0, RULES, LAB["tools"]["label_font"])
+labels.check_label("OUT", label, RULES, (-18, 18, -13, 13))   # ValueError if not printable
+plate = plate.cut(label)
+# flip both to print orientation, then:
+write_project(path, [{"name": "lid", "parts": [("lid", plate_p, 1), ("labels", label_p, 2)],
+                      "settings": INLAY_OBJECT_SETTINGS, "center": (128, 128)}],
+              label_first_plate_settings(RULES.depth, template, 2, 1), template)
+```
+
+```sh
+uv run hwkit bambu flatten --out build/example/profiles
+uv run hwkit bambu template --profiles build/example/profiles --out build/example/bambu-project-settings.json --work build/example/template
+uv run python examples/inlay_lid.py
+uv run hwkit bambu verify build/example/out/lid.3mf --labels build/example/out/labels.stl --body build/example/out/lid.stl --out build/example/verify
+```
+
+Expected last line: `slice verified: all criteria met`. Coverage plot: `build/example/verify/coverage.png`.
+
+Agent use: ask Claude Code for "a case for this KiCad board" or "prepare the print"; the plugin loads the matching skill.
+
 ## Commands
 
 ```sh
