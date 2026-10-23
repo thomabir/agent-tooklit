@@ -12,7 +12,14 @@ Toolkit: `github.com/thomabir/agent-tooklit`, local `~/code/agent-toolkit` (pack
 - The user decides when the version increments. The agent does not change `rev` without an instruction.
 - PCB silkscreen: title block fields as text variables (`${TITLE}`, `${REVISION}`, `${ISSUE_DATE}`, `${COMPANY}`), if there is space.
 - Every BOM symbol: fields Manufacturer, MPN, DigiKey (product link), Mouser (product link). Symbols without a physical part: set "Exclude from BOM".
-- Every BOM symbol: field `DigiKey PN`, DigiKey part number (`-ND`), for SMD parts the cut-tape variant (`CT-ND`, `-1-ND`). Get the number from the DigiKey product page and check it there (L18).
+- Every BOM symbol: field `DigiKey PN`, DigiKey part number (`-ND`), for SMD parts the cut-tape variant (`CT-ND`, `-1-ND`) (L18).
+
+## Distributor fields
+`uv run hwkit kicad fill-distributors <project>.kicad_pro` looks up each Manufacturer + MPN with the DigiKey and Mouser APIs and prints part number, packaging, stock, price at quantity 1 and status. Dry run without `--write`. `--write` adds or sets `DigiKey PN`, `DigiKey` and `Mouser` in all sheets. Fields that are not empty stay as they are, a different API value is an issue (`--force` replaces it).
+- Packaging: no full reel (Tape & Reel, Digi-Reel); lowest minimum order quantity, then most stock.
+- An `ISSUE` line (no exact MPN match, several products, only reels): select the part on the distributor web site and write the field by hand.
+- Credentials: `~/.config/hwkit/credentials.toml`, sections `[digikey]` (`client_id`, `client_secret`, optional `sandbox = true`) and `[mouser]` (`api_key`). Environment variables override: `DIGIKEY_CLIENT_ID`, `DIGIKEY_CLIENT_SECRET`, `DIGIKEY_SANDBOX`, `MOUSER_API_KEY`. Never print the values. DigiKey: production app with "ProductInformation V4" (L20). Locale and currency: `lab/profile.toml` section `[distributors]`.
+- Web search and web fetch do not give reliable distributor part numbers. Use the APIs.
 - Optional symbol field `Order Qty` (non-negative integer): `0` = part in stock, not in the order files. `N` = order max(N, quantity × `--boards`).
 - Ground pour on the ground nets. Connect ground pads to the pour, not with tracks.
 - Mounting holes: footprints from library `MountingHole`, preferably at the corners. Positions on an integer mm grid relative to the outline bounding-box corner.
