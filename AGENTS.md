@@ -8,6 +8,7 @@ Entry point for any coding agent. Claude Code reads `CLAUDE.md`, which refers he
   - `enclosure-design`: case for a KiCad PCB.
   - `bambu-print-prep`: Bambu Studio print project, inlaid labels, slice verification.
   - `exploded-render`: Blender exploded views.
+  - `partsbox`: PartsBox MCP setup, stock lookup, project BOM.
   - `retro`: move findings of a finished project into this toolkit.
 - Failure modes: `lessons.md` (ids L01, ...). Read the entries that the skill references.
 - Equipment and defaults: `lab/profile.toml` (`hwkit lab show`).

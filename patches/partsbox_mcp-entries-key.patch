@@ -1,0 +1,44 @@
+From ed8f52f34e092435cff9da2d942bd4f0c75a047d Mon Sep 17 00:00:00 2001
+From: Thomas Birbacher <thomas@birbacher.com>
+Date: Fri, 23 Oct 2026 15:18:19 +0200
+Subject: [PATCH] Use API key entries in project create, add-entries and
+ update-entries
+
+---
+ src/partsbox_mcp/api/projects.py | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/partsbox_mcp/api/projects.py b/src/partsbox_mcp/api/projects.py
+index 49e23bb..0a43be1 100644
+--- a/src/partsbox_mcp/api/projects.py
++++ b/src/partsbox_mcp/api/projects.py
+@@ -357,7 +357,7 @@ def create_project(
+     if comments is not None:
+         payload["project/comments"] = comments
+     if entries is not None:
+-        payload["project/entries"] = entries
++        payload["entries"] = entries
+ 
+     try:
+         result = api_client._request("project/create", payload)
+@@ -697,7 +697,7 @@ def add_project_entries(
+ 
+     payload: dict[str, Any] = {
+         "project/id": project_id,
+-        "project/entries": entries,
++        "entries": entries,
+     }
+ 
+     try:
+@@ -732,7 +732,7 @@ def update_project_entries(
+ 
+     payload: dict[str, Any] = {
+         "project/id": project_id,
+-        "project/entries": entries,
++        "entries": entries,
+     }
+ 
+     try:
+-- 
+2.50.1 (Apple Git-155)
+

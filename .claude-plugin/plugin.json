@@ -1,6 +1,6 @@
 {
   "name": "agent-toolkit",
   "version": "0.5.0",
-  "description": "Hardware-project processes: KiCad project outputs and checks, enclosure design, Bambu print preparation and verification, exploded renders, retro.",
+  "description": "Hardware-project processes: KiCad project outputs and checks, enclosure design, Bambu print preparation and verification, exploded renders, PartsBox stock and project BOM, retro.",
   "author": {"name": "Thomas Birbacher"}
 }

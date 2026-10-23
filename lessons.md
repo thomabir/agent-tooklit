@@ -101,3 +101,17 @@ Source project: path or repository and commit.
 - Proof: G-code (0.3 mm layers): base shoulder at z = 8.9 mm, lid skirt bottom at z = 8.8 mm (design 8.75 mm both). The lid sits 0.1 mm high; this is the full clearance. Overhang sag not measured.
 - Fix: vertical latch clearance ≥ 2 × layer height. Check with `hwkit.fit.report(..., latches=..., latch_margin=2 × layer height)`. Put the latch and stop surfaces on layer boundaries of their part.
 - Source: 44.006, print 2026-10-22.
+
+## L18 DigiKey upload selects the wrong packaging
+- Symptom: lines show a tape-and-reel number (`-2-ND`, `TR-ND`) with "Menge nicht in ausgewählter Verpackungsart verfügbar", or the MPN with "Duplikat der Herstellerteilenummer". Customer Reference empty.
+- Cause: the upload searched by the MPN column, not by the DigiKey part number column. An MPN has several packaging variants (cut tape, reel, Digi-Reel). Fields with commas (`"74HCT132D,653"`, `"J1,J2"`) are a further risk.
+- Proof: file with columns DigiKey PN (`CT-ND` only), MPN, quantity: 50 % of the lines failed, with reel numbers that were not in the file. File with DigiKey PN only: all lines accepted.
+- Fix: `hwkit.kicad.export.write_order_files` writes `Digi-Key Part Number,Quantity,Customer Reference`, no MPN column, no commas in fields. Symbol field `DigiKey PN` with the cut-tape variant.
+- Source: 44.006, 2026-10-23.
+
+## L19 PartsBox MCP server (nickweedon/partsbox_mcp)
+- Symptom: `create_project` with entries makes an empty project; `add_project_entries` returns HTTP 400.
+- Cause: the server sends `project/entries`; the API key is `entries` (partsbox.com/api.html, project/create and project/add-entries).
+- Fix: `patches/partsbox_mcp-entries-key.patch` (create, add-entries, update-entries).
+- Symptom: `get_part_stock` returns 0 for parts with stock. `get_part_storage` gives the correct on-hand quantity.
+- Source: 44.006, 2026-10-23.
