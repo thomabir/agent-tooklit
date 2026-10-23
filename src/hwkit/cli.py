@@ -91,6 +91,60 @@ def _kicad_outputs(a, lab):
         print(f)
 
 
+def _kicad_order_files(a, lab):
+    from .kicad.export import Project, bom, write_order_files
+
+    fields = lab["kicad"]["fields"]
+    out = Path(a.out)
+    out.mkdir(parents=True, exist_ok=True)
+    project = Project(a.project)
+    for f in write_order_files(bom(lab, project, out / f"{project.name}-bom.csv", fields), fields, a.boards, out):
+        print(f)
+
+
+def _kicad_fill_distributors(a, lab):
+    from . import distributors
+    from .kicad import fields as fieldsmod
+    from .kicad.export import Project
+
+    f = lab["kicad"]["fields"]
+    mfr, mpn = f["manufacturer"], f["mpn"]
+    project = Project(a.project)
+    texts = {s: s.read_text() for s in project.sheets()}
+    parts = sorted({(p.get(mfr, ""), p[mpn]) for t in texts.values() for p in fieldsmod.placed(t) if p.get(mpn, "").strip()})
+    found, notes = distributors.configured(lab)
+    for n in notes:
+        print(f"NOTE: {n}")
+    issues, changed = [], 0
+    for manufacturer, part in parts:
+        for d in found:
+            if a.only and d.name != a.only:
+                continue
+            try:
+                offer, note = d.lookup(manufacturer, part)
+            except RuntimeError as e:
+                issues.append(f"{d.name}: {manufacturer} {part}: {e}")
+                continue
+            if offer is None:
+                issues.append(f"{d.name}: {manufacturer} {part}: {note}")
+                continue
+            price = f"{offer.unit_price:.2f} {offer.currency}" if offer.unit_price is not None else "no price"
+            print(f"{d.name}: {manufacturer} {part} -> {offer.part_number} ({offer.package}), stock {offer.stock}, {price} at qty 1, {note}, {offer.url}")
+            values = {f[role]: getattr(offer, attr) for role, attr in d.roles.items()}
+            match = lambda p: p.get(mfr, "") == manufacturer and p.get(mpn) == part
+            for sheet, text in texts.items():
+                texts[sheet], n, conflicts = fieldsmod.set_fields(text, match, values, after=mpn, replace=a.force)
+                changed += n
+                issues += sorted({f"{d.name}: {part}: field '{k}' is {old!r}, API gives {new!r} (use --force)" for k, old, new in conflicts})
+    if a.write:
+        for sheet, text in texts.items():
+            if text != sheet.read_text():
+                sheet.write_text(text)
+                print(f"written: {sheet}")
+    print(f"{changed} field change(s){'' if a.write else ' (dry run, use --write)'}")
+    return _report([], issues)
+
+
 def _lab_show(a, lab):
     print(f"# {labmod.profile_path()}")
     print(json.dumps(lab, indent=1))
@@ -144,6 +198,17 @@ def main(argv=None):
     c.add_argument("--out", default="outputs")
     c.add_argument("--boards", type=int, default=1, help="number of boards for the order files")
     c.set_defaults(func=_kicad_outputs)
+    c = k.add_parser("order-files", help="BOM, DigiKey and Mouser order files only")
+    c.add_argument("project", help=".kicad_pro file")
+    c.add_argument("--out", default="outputs/bom")
+    c.add_argument("--boards", type=int, default=1, help="number of boards")
+    c.set_defaults(func=_kicad_order_files)
+    c = k.add_parser("fill-distributors", help="DigiKey and Mouser fields from the distributor APIs, by Manufacturer and MPN")
+    c.add_argument("project", help=".kicad_pro file")
+    c.add_argument("--write", action="store_true", help="write the schematic files; without it: dry run")
+    c.add_argument("--force", action="store_true", help="replace fields that are not empty")
+    c.add_argument("--only", choices=["digikey", "mouser"])
+    c.set_defaults(func=_kicad_fill_distributors)
 
     a = p.parse_args(argv)
     sys.exit(a.func(a, labmod.load()) or 0)

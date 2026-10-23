@@ -115,3 +115,10 @@ Source project: path or repository and commit.
 - Fix: `patches/partsbox_mcp-entries-key.patch` (create, add-entries, update-entries).
 - Symptom: `get_part_stock` returns 0 for parts with stock. `get_part_storage` gives the correct on-hand quantity.
 - Source: 44.006, 2026-10-23.
+
+## L20 DigiKey API: sandbox app
+- Symptom: `POST https://api.digikey.com/v1/oauth2/token` returns 401 "Invalid clientId". On `sandbox-api.digikey.com` the token works, but `products/v4/search/keyword` returns 403 "not authorized to perform this request".
+- Cause: the app was made in the DigiKey sandbox, and the sandbox app has no ProductInformation V4 access. Production and sandbox apps have separate client IDs.
+- Proof: same client ID and secret: 401 on production, token on sandbox, 403 on the sandbox product search.
+- Fix: on developer.digikey.com make a production app with "ProductInformation V4". `hwkit.distributors.DigiKey` uses the sandbox only with `sandbox = true`.
+- Source: 44.005, 2026-10-23.
