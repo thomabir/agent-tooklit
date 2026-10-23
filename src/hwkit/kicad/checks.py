@@ -224,7 +224,7 @@ def check_board(root, gnd_nets, hole_grid, corner_max_turn_deg, title=None):
 
 
 def check_bom(rows, fields):
-    """rows: BOM rows (dict, keys = field labels). fields: {role: field name} with roles manufacturer, mpn, digikey, mouser, and the optional role order_qty."""
+    """rows: BOM rows (dict, keys = field labels). fields: {role: field name} with roles manufacturer, mpn, digikey, digikey_pn, mouser, and the optional role order_qty."""
     lines, issues = [f"BOM: {len(rows)} line(s), {sum(int(r['Qty']) for r in rows)} part(s)"], []
     domains = {"digikey": "digikey.", "mouser": "mouser."}
     optional = {"order_qty"}
@@ -237,6 +237,8 @@ def check_bom(rows, fields):
                     issues.append(f"{refs}: field '{name}' is empty")
             elif role == "order_qty" and not v.isdigit():
                 issues.append(f"{refs}: field '{name}' is not a non-negative integer: {v!r}")
+            elif role == "digikey_pn" and not v.endswith("-ND"):
+                issues.append(f"{refs}: field '{name}' is not a DigiKey part number (ends with -ND): {v!r}")
             elif role in domains and not (v.startswith("https://") and domains[role] in v):
                 issues.append(f"{refs}: field '{name}' is not a {domains[role]} https link: {v!r}")
     return lines, issues

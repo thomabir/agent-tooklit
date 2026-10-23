@@ -12,6 +12,7 @@ Toolkit: `github.com/thomabir/agent-tooklit`, local `~/code/agent-toolkit` (pack
 - The user decides when the version increments. The agent does not change `rev` without an instruction.
 - PCB silkscreen: title block fields as text variables (`${TITLE}`, `${REVISION}`, `${ISSUE_DATE}`, `${COMPANY}`), if there is space.
 - Every BOM symbol: fields Manufacturer, MPN, DigiKey (product link), Mouser (product link). Symbols without a physical part: set "Exclude from BOM".
+- Every BOM symbol: field `DigiKey PN`, DigiKey part number (`-ND`), for SMD parts the cut-tape variant (`CT-ND`, `-1-ND`). With an MPN, the DigiKey upload selects a packaging variant itself (often tape and reel, "quantity not available in the selected packaging") or reports "duplicate manufacturer part number". Get the number from the DigiKey product page and check it there.
 - Optional symbol field `Order Qty` (non-negative integer): `0` = part in stock, not in the order files. `N` = order max(N, quantity × `--boards`).
 
 ## Parts in stock
@@ -32,7 +33,7 @@ Fill the zones in KiCad (key B) and save before the check, else the check report
 - `outputs/docs/`: `<name>-schematic.pdf`, `<name>-board.pdf` (one page per copper, silkscreen and fab layer), `<name>-top.png`, `<name>-bottom.png`.
 - `outputs/manufacturing/`: `gerbers/` (Gerbers, Excellon drill, drill map), `<name>-v<rev>-gerbers.zip`, `<name>-pos.csv`.
 - `outputs/bom/`: `<name>-bom.csv`, `<name>-ibom.html` (InteractiveHtmlBom), `order-digikey.csv`, `order-mouser.csv` (quantity × `--boards` or field `Order Qty`, DNP parts and parts with `Order Qty` = 0 left out, lines with the same manufacturer and MPN merged).
-- Order files: upload in the DigiKey BOM Manager and the Mouser BOM Tool. Check the column mapping on the first upload of a project.
+- Order files: upload in the DigiKey BOM Manager and the Mouser BOM Tool. Check the column mapping on the first upload of a project. DigiKey columns: Digi-Key Part Number, Quantity, Customer Reference (references separated by spaces). The file has no MPN column and no field with a comma.
 - Run `check` and `outputs` after each change to the schematic or the board, and commit the outputs with the source files.
 
 ## README

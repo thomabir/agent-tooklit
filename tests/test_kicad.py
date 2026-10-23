@@ -1,7 +1,7 @@
 from hwkit.kicad import checks, sexp
 from hwkit.kicad.export import write_order_files
 
-FIELDS = {"manufacturer": "Manufacturer", "mpn": "MPN", "digikey": "DigiKey", "mouser": "Mouser"}
+FIELDS = {"manufacturer": "Manufacturer", "mpn": "MPN", "digikey": "DigiKey", "digikey_pn": "DigiKey PN", "mouser": "Mouser"}
 
 
 def _board(outline, hole_at="13 13", zone=True, silk="${TITLE} v${REVISION}"):
@@ -72,7 +72,7 @@ def test_title_blocks():
 
 
 def _row(**kw):
-    r = {"Refs": "R1", "Qty": "2", "DNP": "", "Manufacturer": "Yageo", "MPN": "RC0603", "DigiKey": "https://www.digikey.com/x", "Mouser": "https://www.mouser.com/x"}
+    r = {"Refs": "R1", "Qty": "2", "DNP": "", "Manufacturer": "Yageo", "MPN": "RC0603", "DigiKey": "https://www.digikey.com/x", "DigiKey PN": "311-1.00KCRCT-ND", "Mouser": "https://www.mouser.com/x"}
     return r | kw
 
 
@@ -84,10 +84,10 @@ def test_bom_fields():
 
 def test_order_files(tmp_path):
     dk, mo = write_order_files([_row(), _row(Refs="R2", DNP="DNP")], FIELDS, 5, tmp_path)
-    text = dk.read_text().splitlines()
+    text = mo.read_text().splitlines()
     assert len(text) == 2
     assert text[1].startswith("R1,10,Yageo,RC0603")
-    assert mo.read_text().startswith("Customer Part Number")
+    assert dk.read_text().splitlines() == ["Digi-Key Part Number,Quantity,Customer Reference", "311-1.00KCRCT-ND,10,R1"]
 
 
 FIELDS_QTY = FIELDS | {"order_qty": "Order Qty"}
@@ -95,15 +95,16 @@ FIELDS_QTY = FIELDS | {"order_qty": "Order Qty"}
 
 def test_order_qty_field(tmp_path):
     rows = [_row(**{"Order Qty": ""}), _row(Refs="R2", MPN="B", **{"Order Qty": "0"}), _row(Refs="R3", MPN="C", **{"Order Qty": "100"}), _row(Refs="R4", MPN="D", **{"Order Qty": "3"})]
-    dk, _ = write_order_files(rows, FIELDS_QTY, 5, tmp_path)
-    text = dk.read_text().splitlines()
+    _, mo = write_order_files(rows, FIELDS_QTY, 5, tmp_path)
+    text = mo.read_text().splitlines()
     assert [line.split(",")[:2] for line in text[1:]] == [["R1", "10"], ["R3", "100"], ["R4", "10"]]
 
 
 def test_order_files_merge_same_part(tmp_path):
     rows = [_row(Refs="J1", Qty="1", MPN="112659"), _row(Refs="J2", Qty="1", MPN="112659"), _row(Refs="J3", DNP="DNP", MPN="112659")]
-    dk, _ = write_order_files(rows, FIELDS, 2, tmp_path)
-    assert dk.read_text().splitlines()[1].startswith('"J1,J2",4,Yageo,112659')
+    dk, mo = write_order_files(rows, FIELDS, 2, tmp_path)
+    assert mo.read_text().splitlines()[1].startswith('"J1,J2",4,Yageo,112659')
+    assert dk.read_text().splitlines()[1] == "311-1.00KCRCT-ND,4,J1 J2"
 
 
 def test_order_files_merge_conflicting_order_qty(tmp_path):
@@ -120,3 +121,17 @@ def test_bom_order_qty_optional():
     assert checks.check_bom([_row()], FIELDS_QTY)[1] == []
     assert checks.check_bom([_row(**{"Order Qty": "50"})], FIELDS_QTY)[1] == []
     assert len(checks.check_bom([_row(**{"Order Qty": "-1"})], FIELDS_QTY)[1]) == 1
+
+
+def test_order_file_digikey_pn_missing(tmp_path):
+    try:
+        write_order_files([_row(**{"DigiKey PN": ""})], FIELDS, 5, tmp_path)
+    except ValueError as e:
+        assert "DigiKey PN" in str(e)
+    else:
+        raise AssertionError("no ValueError")
+
+
+def test_bom_digikey_pn():
+    assert len(checks.check_bom([_row(**{"DigiKey PN": ""})], FIELDS)[1]) == 1
+    assert len(checks.check_bom([_row(**{"DigiKey PN": "311-1.00KCRCT"})], FIELDS)[1]) == 1
