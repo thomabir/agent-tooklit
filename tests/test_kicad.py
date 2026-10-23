@@ -88,3 +88,35 @@ def test_order_files(tmp_path):
     assert len(text) == 2
     assert text[1].startswith("R1,10,Yageo,RC0603")
     assert mo.read_text().startswith("Customer Part Number")
+
+
+FIELDS_QTY = FIELDS | {"order_qty": "Order Qty"}
+
+
+def test_order_qty_field(tmp_path):
+    rows = [_row(**{"Order Qty": ""}), _row(Refs="R2", MPN="B", **{"Order Qty": "0"}), _row(Refs="R3", MPN="C", **{"Order Qty": "100"}), _row(Refs="R4", MPN="D", **{"Order Qty": "3"})]
+    dk, _ = write_order_files(rows, FIELDS_QTY, 5, tmp_path)
+    text = dk.read_text().splitlines()
+    assert [line.split(",")[:2] for line in text[1:]] == [["R1", "10"], ["R3", "100"], ["R4", "10"]]
+
+
+def test_order_files_merge_same_part(tmp_path):
+    rows = [_row(Refs="J1", Qty="1", MPN="112659"), _row(Refs="J2", Qty="1", MPN="112659"), _row(Refs="J3", DNP="DNP", MPN="112659")]
+    dk, _ = write_order_files(rows, FIELDS, 2, tmp_path)
+    assert dk.read_text().splitlines()[1].startswith('"J1,J2",4,Yageo,112659')
+
+
+def test_order_files_merge_conflicting_order_qty(tmp_path):
+    rows = [_row(Refs="R1", **{"Order Qty": "0"}), _row(Refs="R2", **{"Order Qty": "100"})]
+    try:
+        write_order_files(rows, FIELDS_QTY, 2, tmp_path)
+    except ValueError as e:
+        assert "differs" in str(e)
+    else:
+        raise AssertionError("no ValueError")
+
+
+def test_bom_order_qty_optional():
+    assert checks.check_bom([_row()], FIELDS_QTY)[1] == []
+    assert checks.check_bom([_row(**{"Order Qty": "50"})], FIELDS_QTY)[1] == []
+    assert len(checks.check_bom([_row(**{"Order Qty": "-1"})], FIELDS_QTY)[1]) == 1

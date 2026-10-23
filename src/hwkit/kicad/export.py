@@ -82,8 +82,46 @@ def erc_drc(lab, project, out_dir):
     return lines, issues
 
 
+def order_quantity(row, fields, boards):
+    """Order quantity of a BOM line: BOM quantity × boards, or the value N of the optional field role order_qty.
+    N = 0: part in stock, no order. N > 0: order max(N, BOM quantity × boards)."""
+    n = int(row["Qty"]) * boards
+    name = fields.get("order_qty")
+    v = row.get(name, "").strip() if name else ""
+    if not v:
+        return n
+    m = int(v)
+    if m < 0:
+        raise ValueError(f"{row['Refs']}: field '{name}' is negative: {m}")
+    return 0 if m == 0 else max(m, n)
+
+
+def merge_by_part(rows, fields):
+    """Merge BOM lines with the same manufacturer and MPN (example: same connector with different values). Refs are joined, Qty is added.
+    The order_qty field must be equal or empty in the merged lines."""
+    merged = {}
+    qty_name = fields.get("order_qty")
+    for r in rows:
+        if r["DNP"].strip():
+            continue
+        key = (r[fields["manufacturer"]], r[fields["mpn"]])
+        if key not in merged:
+            merged[key] = dict(r)
+            continue
+        m = merged[key]
+        m["Refs"] = f"{m['Refs']},{r['Refs']}"
+        m["Qty"] = str(int(m["Qty"]) + int(r["Qty"]))
+        if qty_name:
+            a, b = m.get(qty_name, "").strip(), r.get(qty_name, "").strip()
+            if a and b and a != b:
+                raise ValueError(f"{m['Refs']}: field '{qty_name}' differs for the same MPN {key[1]}: {a!r}, {b!r}")
+            m[qty_name] = a or b
+    return list(merged.values())
+
+
 def write_order_files(rows, fields, boards, out_dir):
-    """Upload files for the DigiKey and Mouser BOM tools. DNP lines are left out. Quantity = BOM quantity × boards."""
+    """Upload files for the DigiKey and Mouser BOM tools. DNP lines and lines with order quantity 0 are left out. Lines with the same part are merged (see merge_by_part). Quantity: see order_quantity."""
+    rows = merge_by_part(rows, fields)
     vendors = {
         "digikey": ["Customer Reference", "Quantity", "Manufacturer", "Manufacturer Part Number", "Product Link"],
         "mouser": ["Customer Part Number", "Quantity", "Manufacturer", "Mfr Part Number", "Product Link"],
@@ -95,9 +133,10 @@ def write_order_files(rows, fields, boards, out_dir):
             w = csv.writer(f)
             w.writerow(header)
             for r in rows:
-                if r["DNP"].strip():
+                n = order_quantity(r, fields, boards)
+                if n == 0:
                     continue
-                w.writerow([r["Refs"], int(r["Qty"]) * boards, r[fields["manufacturer"]], r[fields["mpn"]], r[fields[vendor]]])
+                w.writerow([r["Refs"], n, r[fields["manufacturer"]], r[fields["mpn"]], r[fields[vendor]]])
         paths.append(path)
     return paths
 
