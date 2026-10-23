@@ -119,15 +119,29 @@ def merge_by_part(rows, fields):
     return list(merged.values())
 
 
+def digikey_pn(row, fields):
+    """DigiKey part number of a BOM line. The DigiKey order file has no MPN column: with an MPN, the DigiKey upload selects a packaging variant itself (often tape and reel) or reports a duplicate MPN."""
+    v = row.get(fields["digikey_pn"], "").strip()
+    if not v:
+        raise ValueError(f"{row['Refs']}: field '{fields['digikey_pn']}' is empty")
+    return v
+
+
 def write_order_files(rows, fields, boards, out_dir):
     """Upload files for the DigiKey and Mouser BOM tools. DNP lines and lines with order quantity 0 are left out. Lines with the same part are merged (see merge_by_part). Quantity: see order_quantity."""
     rows = merge_by_part(rows, fields)
     vendors = {
-        "digikey": ["Customer Reference", "Quantity", "Manufacturer", "Manufacturer Part Number", "Product Link"],
-        "mouser": ["Customer Part Number", "Quantity", "Manufacturer", "Mfr Part Number", "Product Link"],
+        "digikey": (
+            ["Digi-Key Part Number", "Quantity", "Customer Reference"],
+            lambda r, n: [digikey_pn(r, fields), n, r["Refs"].replace(",", " ")],
+        ),
+        "mouser": (
+            ["Customer Part Number", "Quantity", "Manufacturer", "Mfr Part Number", "Product Link"],
+            lambda r, n: [r["Refs"], n, r[fields["manufacturer"]], r[fields["mpn"]], r[fields["mouser"]]],
+        ),
     }
     paths = []
-    for vendor, header in vendors.items():
+    for vendor, (header, line) in vendors.items():
         path = out_dir / f"order-{vendor}.csv"
         with open(path, "w", newline="") as f:
             w = csv.writer(f)
@@ -136,7 +150,7 @@ def write_order_files(rows, fields, boards, out_dir):
                 n = order_quantity(r, fields, boards)
                 if n == 0:
                     continue
-                w.writerow([r["Refs"], n, r[fields["manufacturer"]], r[fields["mpn"]], r[fields[vendor]]])
+                w.writerow(line(r, n))
         paths.append(path)
     return paths
 
