@@ -12,17 +12,18 @@ Toolkit: `github.com/thomabir/agent-tooklit`, local `~/code/agent-toolkit` (pack
 - The user decides when the version increments. The agent does not change `rev` without an instruction.
 - PCB silkscreen: title block fields as text variables (`${TITLE}`, `${REVISION}`, `${ISSUE_DATE}`, `${COMPANY}`), if there is space.
 - Every BOM symbol: fields Manufacturer, MPN, DigiKey (product link), Mouser (product link). Symbols without a physical part: set "Exclude from BOM".
-- Every BOM symbol: field `DigiKey PN`, DigiKey part number (`-ND`), for SMD parts the cut-tape variant (`CT-ND`, `-1-ND`). With an MPN, the DigiKey upload selects a packaging variant itself (often tape and reel, "quantity not available in the selected packaging") or reports "duplicate manufacturer part number". Get the number from the DigiKey product page and check it there.
+- Every BOM symbol: field `DigiKey PN`, DigiKey part number (`-ND`), for SMD parts the cut-tape variant (`CT-ND`, `-1-ND`). Get the number from the DigiKey product page and check it there (L18).
 - Optional symbol field `Order Qty` (non-negative integer): `0` = part in stock, not in the order files. `N` = order max(N, quantity × `--boards`).
-
-## Parts in stock
-Before an order, compare the R and C lines of the BOM with the stock in PartsBox (MCP server `partsbox`, on-hand quantity from `get_part_storage`).
-- Use a stock part if its specification is identical or better for the circuit (value, package, voltage, dielectric, tolerance, temperature coefficient, power). A lower rating is acceptable if the circuit does not need it (example: 25 V capacitor on a board with no voltage near 25 V). Write the stock part into the symbol fields and set `Order Qty` to `0`.
-- A better stock part in a higher price class (example: thin film for thick film): do not substitute. Order the BOM part and add it to the library.
-- New library part (a jellybean R or C that is not in stock): set `Order Qty` to a quantity worth a few USD, to get the quantity price.
 - Ground pour on the ground nets. Connect ground pads to the pour, not with tracks.
 - Mounting holes: footprints from library `MountingHole`, preferably at the corners. Positions on an integer mm grid relative to the outline bounding-box corner.
 - Board corners rounded: arcs between Edge.Cuts lines, or a rectangle with a corner radius.
+
+## Parts in stock
+Before an order, compare the R and C lines of the BOM with the stock in PartsBox (skill `partsbox`).
+- Use a stock part if its specification is identical or better for the circuit (value, package, voltage, dielectric, tolerance, temperature coefficient, power). A lower rating is acceptable if the circuit does not need it (example: 25 V capacitor on a board with no voltage near 25 V). Write the stock part into the symbol fields and set `Order Qty` to `0`.
+- A better stock part in a higher price class (example: thin film for thick film): do not substitute. Order the BOM part and add it to the library.
+- New library part (a jellybean R or C that is not in stock): set `Order Qty` to a quantity worth a few USD, to get the quantity price.
+- After the order file is final: PartsBox project with the full BOM (skill `partsbox`).
 
 ## Check
 `uv run hwkit kicad check <project>.kicad_pro`: title blocks, outline corners, mounting-hole grid, filled ground zones, BOM fields, ERC and DRC errors (with schematic parity). Exit status 0 = no issues. `NOTE:` lines are recommendations.

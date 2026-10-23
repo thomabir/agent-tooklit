@@ -120,7 +120,7 @@ def merge_by_part(rows, fields):
 
 
 def digikey_pn(row, fields):
-    """DigiKey part number of a BOM line. The DigiKey order file has no MPN column: with an MPN, the DigiKey upload selects a packaging variant itself (often tape and reel) or reports a duplicate MPN."""
+    """DigiKey part number of a BOM line. The DigiKey order file has no MPN column: with an MPN, the DigiKey upload selects a packaging variant itself (often tape and reel) or reports a duplicate MPN (L18)."""
     v = row.get(fields["digikey_pn"], "").strip()
     if not v:
         raise ValueError(f"{row['Refs']}: field '{fields['digikey_pn']}' is empty")
