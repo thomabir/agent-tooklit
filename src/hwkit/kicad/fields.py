@@ -108,7 +108,7 @@ def set_fields(text, match, values, after, replace=False):
             _, s, e = props[after]
             line_start = text.rfind("\n", 0, s) + 1
             indent = text[line_start:s]
-            node = _PROPERTY.sub(lambda _: f'(property "{_quote(name)}" "{_quote(value)}"', text[s:e], count=1)
+            node = _PROPERTY.sub(lambda _, n=name, v=value: f'(property "{_quote(n)}" "{_quote(v)}"', text[s:e], count=1)
             edits.append((e, e, f"\n{indent}{node}"))
     for s, e, new in sorted(edits, reverse=True):
         text = text[:s] + new + text[e:]

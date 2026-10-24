@@ -23,7 +23,7 @@ def test_set_title_block_replace_and_add():
 def _project(tmp_path, stem="template"):
     (tmp_path / f"{stem}.kicad_pro").write_text(json.dumps({"meta": {"filename": f"{stem}.kicad_pro"}}))
     (tmp_path / f"{stem}.kicad_sch").write_text(SCH)
-    (tmp_path / f"{stem}.kicad_pcb").write_text("(kicad_pcb (title_block (title \"Old\")))\n")
+    (tmp_path / f"{stem}.kicad_pcb").write_text('(kicad_pcb (title_block (title "Old")))\n')
     return tmp_path / f"{stem}.kicad_pro"
 
 
@@ -63,7 +63,7 @@ def test_fab_rules(tmp_path, monkeypatch):
     assert "pcbway-2layer-standard" in setup.processes()
     dru = setup.copy_fab_rules(project.pro, "pcbway-2layer-standard")
     assert setup.check_fab_rules({}, project, tmp_path) == (["process rules: pcbway-2layer-standard"], [])
-    dru.write_text(dru.read_text() + "\n(rule \"x\" (constraint clearance (min 0.2mm)))\n")
+    dru.write_text(dru.read_text() + '\n(rule "x" (constraint clearance (min 0.2mm)))\n')
     assert "differs" in setup.check_fab_rules({}, project, tmp_path)[0][0]
     monkeypatch.setattr(setup, "rules_load", lambda *a: False)
     assert "does not load" in setup.check_fab_rules({}, project, tmp_path)[1][0]
@@ -81,7 +81,7 @@ def test_library_rules_load_in_kicad(tmp_path):
     for process in setup.processes():
         assert setup.rules_load(LAB, pcb, setup.FAB_DIR / f"{process}.kicad_dru", tmp_path / process), process
     bad = tmp_path / "bad.kicad_dru"
-    bad.write_text("(version 1)\n(rule \"x\" (constraint track_widthX (min 0.1mm)))\n")
+    bad.write_text('(version 1)\n(rule "x" (constraint track_widthX (min 0.1mm)))\n')
     assert not setup.rules_load(LAB, pcb, bad, tmp_path / "bad")
 
 

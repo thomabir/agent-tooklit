@@ -12,6 +12,7 @@ import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
+from typing import ClassVar
 
 ENV = {
     ("digikey", "client_id"): "DIGIKEY_CLIENT_ID",
@@ -63,7 +64,7 @@ class Distributor:
     """A distributor that finds an offer for a manufacturer part. roles: {schematic field role: Offer attribute}."""
 
     name = ""
-    roles = {}
+    roles: ClassVar[dict] = {}
 
     def lookup(self, manufacturer, mpn, part_number=None):
         """Returns (offer or None, note). part_number: distributor part number that selects the packaging variant."""
@@ -92,7 +93,7 @@ def _breaks(rows, qty_key, price_key):
 
 class DigiKey(Distributor):
     name = "digikey"
-    roles = {"digikey_pn": "part_number", "digikey": "url", "datasheet": "datasheet"}
+    roles: ClassVar[dict] = {"digikey_pn": "part_number", "digikey": "url", "datasheet": "datasheet"}
     API = "https://api.digikey.com"
     SANDBOX_API = "https://sandbox-api.digikey.com"  # for apps made in the DigiKey sandbox; the production API rejects their client ID
 
@@ -163,7 +164,7 @@ class DigiKey(Distributor):
 
 class Mouser(Distributor):
     name = "mouser"
-    roles = {"mouser_pn": "part_number", "mouser": "url"}
+    roles: ClassVar[dict] = {"mouser_pn": "part_number", "mouser": "url"}
     API = "https://api.mouser.com/api/v1"
 
     def __init__(self, api_key, currency):

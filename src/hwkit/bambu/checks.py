@@ -4,6 +4,7 @@ import json
 import re
 import xml.etree.ElementTree as ET
 import zipfile
+from pathlib import Path
 
 from . import INLAY_OBJECT_SETTINGS
 
@@ -74,7 +75,7 @@ def inlay_region(path):
 
 def _header(gcode):
     header = {}
-    for line in open(gcode):
+    for line in Path(gcode).read_text().splitlines(keepends=True):
         m = re.match(r"^; (\w+) = (.*)$", line)
         if m:
             header.setdefault(m.group(1), m.group(2).strip())

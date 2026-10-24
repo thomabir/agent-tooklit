@@ -61,7 +61,7 @@ def test_set_fields_replace_and_insert():
     assert r1["DigiKey"] == 'https://www.digikey.ch/a"b'
     assert "DigiKey" not in r2
     sexp.parse(text)
-    new = text[text.index('(property "DigiKey" '):]
+    new = text[text.index('(property "DigiKey" ') :]
     assert new.splitlines()[1].strip() == "(at 10 12 0)"  # copy of the MPN field: same position, hidden
     assert fields.set_fields(text, match, {"DigiKey PN": "311-1KCT-ND"}, after="MPN") == (text, 0, [])
 

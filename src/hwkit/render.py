@@ -20,7 +20,7 @@ def exploded(lab, out_dir, name, parts, glb=None, views=None, resolution=(1400, 
     cfg = {"out_dir": str(out_dir), "name": name, "parts": parts, "glb": glb, "views": views or DEFAULT_VIEWS, "resolution": list(resolution), "samples": samples}
     cfg_path = out_dir / f"{name}.json"
     cfg_path.write_text(json.dumps(cfg, indent=1, default=str))
-    r = subprocess.run([lab["tools"]["blender"], "-b", "--python", str(SCRIPT), "--", str(cfg_path)], capture_output=True, text=True)
+    r = subprocess.run([lab["tools"]["blender"], "-b", "--python", str(SCRIPT), "--", str(cfg_path)], check=False, capture_output=True, text=True)
     image = out_dir / f"{name}.png"
     if r.returncode != 0 or "Traceback" in r.stdout or not image.exists():
         raise RuntimeError(f"Blender failed:\n{r.stdout[-3000:]}\n{r.stderr[-2000:]}")

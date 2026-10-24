@@ -22,5 +22,5 @@ Entry point for any coding agent. Claude Code reads `CLAUDE.md`, which refers he
 - `lessons.md`: general design principles, one bullet each, at most 100 (`hwkit lessons check lessons.md`, also a test). No tool workarounds, no project items. Removed entries go to `lessons-archive.md`.
 - Lab-specific values only in `lab/profile.toml`.
 - Command output: a summary line, then `ISSUE:` and `NOTE:` lines only. Full reports go to files.
-- Before a commit: `uv run --group dev pytest`. Release: update the version in `pyproject.toml`, `src/hwkit/__init__.py`, `.claude-plugin/plugin.json`; tag `vX.Y.Z`; push with tags.
+- Before a commit: `uvx ruff check`, `uvx ruff format`, `uv run --group dev pytest`. Release: update the version in `pyproject.toml`, `src/hwkit/__init__.py`, `.claude-plugin/plugin.json`; tag `vX.Y.Z`; push with tags.
 - Projects pin a tag. Record behaviour changes in the tag message.
