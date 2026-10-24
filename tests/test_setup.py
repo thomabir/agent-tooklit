@@ -182,3 +182,17 @@ def test_project_create_entries():
     assert op == "project/create"
     assert params["entries"][0] == {"entry/quantity": 2, "entry/designators": ["R1", "R2"], "entry/order": 0, "entry/part-id": "a"}
     assert params["entries"][1]["entry/name"] == "OTHER"
+
+
+@pytest.mark.parametrize("category, ok", [("ok", True), ("status/ok", True), ("status/error", False)])
+def test_client_status(monkeypatch, category, ok):
+    import io
+
+    body = json.dumps({"partsbox.status/category": category, "partsbox.status/message": "m", "data": [1]}).encode()
+    monkeypatch.setattr(partsbox.urllib.request, "urlopen", lambda *a, **k: io.BytesIO(body))
+    client = partsbox.Client(key="k")
+    if ok:
+        assert client.call("part/all") == [1]
+    else:
+        with pytest.raises(RuntimeError):
+            client.call("part/all")

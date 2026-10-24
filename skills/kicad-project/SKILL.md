@@ -26,7 +26,7 @@ Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kic
 - Every BOM symbol: Manufacturer, MPN, Datasheet, DigiKey, DigiKey PN, Mouser, Mouser PN. Optional: Notes (shown in the README BOM), Order Qty. Symbols without a physical part: "Exclude from BOM".
 - Symbol, footprint and 3D model: find the LCSC part number of the MPN, then `make part LCSC=C123456` (project library `parts`, STEP model embedded in the footprint, field `LCSC Part`). The search is an agent task; check that the LCSC part has the same MPN.
 - Distributor fields: `make distributors` (dry run), `make distributors-write`. An `ISSUE` line (no exact match, several products, only reels) needs a decision: select the part and write the field.
-- Prices: `make prices` writes `pcb/bom/prices.csv`. Run it before a release and when parts change.
+- Prices: `make prices` writes `pcb/bom/prices.csv` (private, not tracked). Run it before a release and when parts change.
 - Order files: DigiKey and Mouser, by distributor part number only. The DigiKey upload is tested; the Mouser upload is not tested yet: check the column mapping on the first upload and update this skill.
 - Order Qty (non-negative integer): `0` = in stock, not ordered. `N` = order max(N, quantity × boards).
 

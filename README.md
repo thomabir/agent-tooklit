@@ -30,7 +30,7 @@ Other agents: see `AGENTS.md`.
 Python package in a project (pin a tag):
 
 ```sh
-uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.7.1"
+uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.7.2"
 ```
 
 KiCad projects: start from the project template `kicad-prj-template`. Its Makefile calls `hwkit` (`make help`).

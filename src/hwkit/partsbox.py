@@ -13,6 +13,7 @@ from pathlib import Path
 API = "https://api.partsbox.com/api/1"
 ENV_FILE = Path("~/.partsbox/.env").expanduser()
 TIMEOUT = 30  # s
+OK_CATEGORIES = ("ok", "status/ok")  # partsbox.status/category of a successful call
 SI = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "µ": 1e-6, "μ": 1e-6, "m": 1e-3, "": 1.0, "R": 1.0, "k": 1e3, "K": 1e3, "M": 1e6, "G": 1e9}
 _VALUE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*([pnuµμmRkKMG]?)(\d*)\s*(?:F|H|Ω|Ohm|ohm|R)?(?![\w])")
 _PACKAGE = re.compile(r"(?<!\d)(01005|0201|0402|0603|0805|1206|1210|1812|2010|2512)(?!\d)")
@@ -40,7 +41,7 @@ class Client:
                 body = json.loads(r.read())
         except urllib.error.HTTPError as e:
             raise RuntimeError(f"PartsBox {op}: {e.code} {e.reason}: {e.read()[:300]!r}") from None
-        if body.get("partsbox.status/category") != "status/ok":
+        if body.get("partsbox.status/category") not in OK_CATEGORIES:
             raise RuntimeError(f"PartsBox {op}: {body.get('partsbox.status/message')}")
         return body.get("data")
 
