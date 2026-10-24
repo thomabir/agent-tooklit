@@ -8,8 +8,8 @@ description: PartsBox inventory (stock of BOM parts, project BOM, setup of the A
 Toolkit: `~/code/agent-toolkit`. Decision rules for stock parts: skill `kicad-project`, section "Parts in stock".
 
 ## Commands (project Makefile)
-- `make stock`: stock per BOM line (exact MPN match, on-hand quantity, low-stock level), candidates for the other lines. Writes `stock.csv` and `order-digikey-against-stock.csv` into the BOM folder (see skill `kicad-project`).
-- `make partsbox-project`: creates the project `<title> v<rev>`, or replaces all its entries with the BOM. Stock parts are linked by MPN; other lines are named entries (MPN, manufacturer and value in the comments). Ask the user before it runs.
+- `make fetch-stock`: stock per BOM line (exact MPN match, on-hand quantity, low-stock level), candidates for the other lines. Writes `stock.csv` and `order-digikey-against-stock.csv` into the BOM folder (see skill `kicad-project`).
+- `make upload-partsbox-project`: creates the project `<title> v<rev>`, or replaces all its entries with the BOM. Stock parts are linked by MPN; other lines are named entries (MPN, manufacturer and value in the comments). Ask the user before it runs.
 
 ## API key (once per machine)
 The user writes `PARTSBOX_API_KEY=...` into `~/.partsbox/.env` (mode 600), from PartsBox Settings | Data. The agent never reads or prints the key.
