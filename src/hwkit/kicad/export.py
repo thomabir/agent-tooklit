@@ -12,6 +12,8 @@ from . import sexp
 COPPER_TYPES = ("signal", "power", "mixed", "jumper")
 BOARD_PDF_LAYERS = ("F.SilkS", "B.SilkS", "F.Fab", "B.Fab")
 GERBER_LAYERS = ("F.Mask", "B.Mask", "F.Paste", "B.Paste", "F.SilkS", "B.SilkS", "Edge.Cuts")
+DIGIKEY_HEADER = ["Digi-Key Part Number", "Quantity", "Customer Reference"]
+STOCK_FILE = "stock.csv"
 
 
 class Project:
@@ -127,12 +129,45 @@ def distributor_pn(row, fields, role):
     return v
 
 
+def write_stock(path, stock):
+    """Stock file: on-hand quantity per MPN. stock: {MPN: quantity}."""
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["MPN", "On Hand"])
+        for mpn, n in sorted(stock.items()):
+            w.writerow([mpn, n])
+
+
+def read_stock(path):
+    """{MPN in upper case: on-hand quantity} from a stock file (see write_stock)."""
+    with open(path, newline="") as f:
+        return {r["MPN"].strip().upper(): int(r["On Hand"]) for r in csv.DictReader(f)}
+
+
+def write_order_against_stock(rows, fields, boards, out_dir):
+    """DigiKey upload file order-digikey-against-stock.csv from out_dir/stock.csv. Quantity: order_quantity minus the on-hand quantity; lines with a result of 0 or less are left out. Returns the list of written files: empty without a stock file."""
+    stock_csv = out_dir / STOCK_FILE
+    if not stock_csv.exists():
+        return []
+    stock = read_stock(stock_csv)
+    path = out_dir / "order-digikey-against-stock.csv"
+    with open(path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(DIGIKEY_HEADER)
+        for r in merge_by_part(rows, fields):
+            n = order_quantity(r, fields, boards) - stock.get(r[fields["mpn"]].strip().upper(), 0)
+            if n > 0:
+                w.writerow([distributor_pn(r, fields, "digikey_pn"), n, r["Refs"].replace(",", " ")])
+    return [path]
+
+
 def write_order_files(rows, fields, boards, out_dir):
-    """Upload files for the DigiKey and Mouser BOM tools, by distributor part number only (Mouser upload not tested). DNP lines and lines with order quantity 0 are left out. Lines with the same part are merged (see merge_by_part). Quantity: see order_quantity. No field contains a comma."""
+    """Upload files for the DigiKey and Mouser BOM tools, by distributor part number only (Mouser upload not tested). DNP lines and lines with order quantity 0 are left out. Lines with the same part are merged (see merge_by_part). Quantity: see order_quantity. No field contains a comma.
+    With a stock file in out_dir, also the DigiKey file against stock (see write_order_against_stock)."""
     rows = merge_by_part(rows, fields)
     vendors = {
         "digikey": (
-            ["Digi-Key Part Number", "Quantity", "Customer Reference"],
+            DIGIKEY_HEADER,
             lambda r, n: [distributor_pn(r, fields, "digikey_pn"), n, r["Refs"].replace(",", " ")],
         ),
         "mouser": (
@@ -152,7 +187,7 @@ def write_order_files(rows, fields, boards, out_dir):
                     continue
                 w.writerow(line(r, n))
         paths.append(path)
-    return paths
+    return paths + write_order_against_stock(rows, fields, boards, out_dir)
 
 
 def ibom(lab, project, out_dir, fields):

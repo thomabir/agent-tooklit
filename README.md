@@ -30,7 +30,7 @@ Other agents: see `AGENTS.md`.
 Python package in a project (pin a tag):
 
 ```sh
-uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.6.0"
+uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.7.0"
 ```
 
 KiCad projects: start from the project template `kicad-prj-template`. Its Makefile calls `hwkit` (`make help`).
@@ -74,7 +74,7 @@ Agent use: ask Claude Code for "a case for this KiCad board" or "prepare the pri
 hwkit lab show
 hwkit kicad init|fab-rules|import-part|check|outputs|order-files|fill-distributors|prices ...
 hwkit readme update|check README.md --project <project.kicad_pro> --prices <prices.csv> --boards <n>
-hwkit partsbox stock|project <project.kicad_pro>
+hwkit partsbox stock|project <project.kicad_pro>   # stock --out <bom folder>: stock.csv, order-digikey-against-stock.csv
 hwkit lessons check lessons.md
 hwkit bambu flatten --out build/bambu-profiles
 hwkit bambu template --profiles build/bambu-profiles --out bambu-project-settings.json

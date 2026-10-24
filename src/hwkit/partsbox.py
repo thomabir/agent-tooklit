@@ -88,13 +88,13 @@ def candidates(row, fields, parts):
 
 
 def stock_report(client, rows, fields, boards):
-    """rows: BOM rows without DNP lines (merged by part). Returns (lines, notes)."""
+    """rows: BOM rows without DNP lines (merged by part). Returns (lines, notes, stock); stock: {MPN: on-hand quantity} of the exact MPN matches."""
     parts = client.parts()
     by_mpn = {}
     for p in parts:
         if p.get("part/mpn"):
             by_mpn.setdefault(p["part/mpn"].strip().upper(), []).append(p)
-    lines, notes = [], []
+    lines, notes, stock = [], [], {}
     for r in rows:
         need = int(r["Qty"]) * boards
         refs = r["Refs"].replace(",", " ")
@@ -103,6 +103,7 @@ def stock_report(client, rows, fields, boards):
         if exact:
             p = exact[0]
             have = client.on_hand(p["part/id"])
+            stock[mpn] = have
             low = (p.get("part/low-stock") or {}).get("report")
             lines.append(f"{refs}: {mpn} in stock: {have}, need {need}")
             if have < need:
@@ -117,7 +118,7 @@ def stock_report(client, rows, fields, boards):
         lines.append(f"{refs}: {mpn} not in stock; candidates (same size and value):")
         for p in cands:
             lines.append(f"  {p.get('part/name', '')} | {p.get('part/mpn', '')} | {p.get('part/description', '')} | on hand {client.on_hand(p['part/id'])}")
-    return lines, notes
+    return lines, notes, stock
 
 
 def entries(rows, fields, parts):

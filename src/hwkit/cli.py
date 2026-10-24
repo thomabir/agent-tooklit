@@ -190,7 +190,10 @@ def _kicad_fill_distributors(a, lab):
             price = f"{offer.unit_price:.2f} {offer.currency}" if offer.unit_price is not None else "no price"
             print(f"{d.name}: {manufacturer} {part} -> {offer.part_number} ({offer.package}), stock {offer.stock}, {price} at qty 1, {note}, {offer.url}")
             values = {f[role]: getattr(offer, attr) for role, attr in d.roles.items() if role in f and getattr(offer, attr)}
-            match = lambda p, m=manufacturer, n=part: p.get(mfr, "") == m and p.get(mpn) == n
+
+            def match(p, m=manufacturer, n=part):
+                return p.get(mfr, "") == m and p.get(mpn) == n
+
             for sheet, text in texts.items():
                 texts[sheet], n, conflicts = fieldsmod.set_fields(text, match, values, after=mpn, replace=a.force)
                 changed += n
@@ -267,8 +270,16 @@ def _readme_check(a, lab):
 def _partsbox_stock(a, lab):
     from . import partsbox
 
+    from .kicad.export import STOCK_FILE, write_order_against_stock, write_stock
+
+    fields = lab["kicad"]["fields"]
     rows = _placed_rows(lab, _project(a), a.work)
-    lines, notes = partsbox.stock_report(partsbox.Client(), rows, lab["kicad"]["fields"], a.boards)
+    lines, notes, stock = partsbox.stock_report(partsbox.Client(), rows, fields, a.boards)
+    if a.out:
+        out = Path(a.out)
+        out.mkdir(parents=True, exist_ok=True)
+        write_stock(out / STOCK_FILE, stock)
+        lines += [str(out / STOCK_FILE), *map(str, write_order_against_stock(rows, fields, a.boards, out))]
     return _report(lines + [f"NOTE: {n}" for n in notes], [])
 
 
@@ -404,6 +415,7 @@ def main(argv=None):
     _project_arg(c)
     c.add_argument("--boards", type=int, default=1)
     c.add_argument("--work", default="build/partsbox")
+    c.add_argument("--out", help="BOM folder for stock.csv and order-digikey-against-stock.csv")
     c.set_defaults(func=_partsbox_stock)
     c = pb.add_parser("project", help="create the PartsBox project '<title> v<rev>', or replace its entries with the BOM")
     _project_arg(c)

@@ -53,7 +53,9 @@ def test_symbols_skip_lib_symbols():
 
 
 def test_set_fields_replace_and_insert():
-    match = lambda p: p.get("Manufacturer") == "Yageo"
+    def match(p):
+        return p.get("Manufacturer") == "Yageo"
+
     text, n, conflicts = fields.set_fields(SCH, match, {"DigiKey PN": "311-1KCT-ND", "DigiKey": 'https://www.digikey.ch/a"b'}, after="MPN")
     assert (n, conflicts) == (2, [])
     r1, r2 = fields.placed(text)
@@ -67,7 +69,9 @@ def test_set_fields_replace_and_insert():
 
 
 def test_set_fields_conflict_and_replace():
-    match = lambda p: p.get("Manufacturer") == "Yageo"
+    def match(p):
+        return p.get("Manufacturer") == "Yageo"
+
     text, _, _ = fields.set_fields(SCH, match, {"DigiKey PN": "A-ND"}, after="MPN")
     assert fields.set_fields(text, match, {"DigiKey PN": "B-ND"}, after="MPN") == (text, 0, [("DigiKey PN", "A-ND", "B-ND")])
     text, n, conflicts = fields.set_fields(text, match, {"DigiKey PN": "B-ND"}, after="MPN", replace=True)

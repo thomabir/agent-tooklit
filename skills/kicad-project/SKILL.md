@@ -37,6 +37,7 @@ Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kic
 - Substitution: write the stock part into the symbol fields, `Order Qty` = `0`.
 - New jellybean part: `Order Qty` = a quantity worth a few USD.
 - `NOTE` lines about low stock: tell the user.
+- `make stock` also writes `pcb/bom/stock.csv` (on-hand quantity per exact MPN match) and `pcb/bom/order-digikey-against-stock.csv`: DigiKey order quantity minus the on-hand quantity, lines with no shortfall left out. `make outputs` writes this order file again while `stock.csv` exists. Both files are not tracked: they change with the stock.
 - After the order files are final: `make partsbox-project` (ask the user first; it writes to PartsBox).
 
 ## Design recommendations

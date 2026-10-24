@@ -147,9 +147,10 @@ def _row(refs, mpn, value, fp="Resistor_SMD:R_0603_1608Metric", qty="2"):
 
 def test_stock_report():
     client = FakeClient(PARTS, {"a": 104, "b": 50, "c": 9})
-    lines, notes = partsbox.stock_report(client, [_row("R1,R2", "rc0603fr-0710kl", "10k"), _row("R3", "OTHER", "4k7"), _row("C1", "CAP", "1u")], FIELDS, 2)
+    lines, notes, stock = partsbox.stock_report(client, [_row("R1,R2", "rc0603fr-0710kl", "10k"), _row("R3", "OTHER", "4k7"), _row("C1", "CAP", "1u")], FIELDS, 2)
     assert lines[0] == "R1 R2: rc0603fr-0710kl in stock: 104, need 4"
     assert notes == []
+    assert stock == {"rc0603fr-0710kl": 104}
     client._storage["a"] = 103
     assert partsbox.stock_report(client, [_row("R1,R2", "RC0603FR-0710KL", "10k")], FIELDS, 2)[1] == ["R1 R2: RC0603FR-0710KL: stock after the build 99 < low-stock level 100"]
     assert lines[1].startswith("R3: OTHER not in stock; candidates")

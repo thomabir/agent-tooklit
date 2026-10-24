@@ -1,5 +1,5 @@
 from hwkit.kicad import checks, sexp
-from hwkit.kicad.export import write_order_files
+from hwkit.kicad.export import write_order_files, write_stock
 
 FIELDS = {"manufacturer": "Manufacturer", "mpn": "MPN", "datasheet": "Datasheet", "digikey": "DigiKey", "digikey_pn": "DigiKey PN", "mouser": "Mouser", "mouser_pn": "Mouser PN"}
 
@@ -80,6 +80,15 @@ def test_order_qty_field(tmp_path):
     _, mo = write_order_files(rows, FIELDS_QTY, 5, tmp_path)
     text = mo.read_text().splitlines()
     assert [line.split(",")[1:] for line in text[1:]] == [["10", "R1"], ["100", "R3"], ["10", "R4"]]
+
+
+def test_order_against_stock(tmp_path):
+    rows = [_row(Refs="R1", MPN="A", **{"DigiKey PN": "A-ND"}), _row(Refs="R2", MPN="B", **{"DigiKey PN": "B-ND"}), _row(Refs="R3", MPN="C", **{"DigiKey PN": "C-ND"})]
+    assert len(write_order_files(rows, FIELDS, 5, tmp_path)) == 2
+    write_stock(tmp_path / "stock.csv", {"a": 10, "B": 4})
+    paths = write_order_files(rows, FIELDS, 5, tmp_path)
+    assert paths[-1].name == "order-digikey-against-stock.csv"
+    assert paths[-1].read_text().splitlines() == ["Digi-Key Part Number,Quantity,Customer Reference", "B-ND,6,R2", "C-ND,10,R3"]
 
 
 def test_order_files_merge_same_part(tmp_path):
