@@ -50,7 +50,7 @@ def _overlap(a, b):
 def report(base, lid, pcb, flexing=None, latches=None, latch_margin=0.0):
     """Print interference: assembled, PCB path into base, lid path onto base, latch clearance. flexing: lid features allowed to touch the base on the path (snap hooks).
 
-    latches: lid hooks with a 90° retention face. With the lid latch_margin above its seat, they must not touch the base (L17).
+    latches: lid hooks with a 90° retention face. With the lid latch_margin above its seat, they must not touch the base. Printed stop and latch surfaces move by up to half a layer each, so latch_margin >= 2 × layer height.
     Returns the list of unexpected interferences.
     """
     if latch_margin < 0:

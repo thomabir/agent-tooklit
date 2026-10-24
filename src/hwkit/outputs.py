@@ -1,6 +1,6 @@
 """Output files with an overwrite guard.
 
-Each written file gets its SHA-256 in <out_dir>/manifest.json. A file that changed afterwards (for example saved in Bambu Studio) stops write_all() before anything is written. See lessons.md (L09).
+Each written file gets its SHA-256 in <out_dir>/manifest.json. A file that changed afterwards (for example saved in Bambu Studio) stops write_all() before anything is written.
 """
 
 import hashlib

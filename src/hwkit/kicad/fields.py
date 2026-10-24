@@ -5,6 +5,11 @@ import re
 _PROPERTY = re.compile(r'\(property "((?:[^"\\]|\\.)*)" "((?:[^"\\]|\\.)*)"')
 
 
+def is_empty(v):
+    """True for an empty field and for "~", the KiCad value of an empty Datasheet field."""
+    return v.strip() in ("", "~")
+
+
 def _quote(v):
     return v.replace("\\", "\\\\").replace('"', '\\"')
 
@@ -81,7 +86,7 @@ def placed(text):
 
 def set_fields(text, match, values, after, replace=False):
     """Set fields in all placed symbols for which match(properties as {name: value}) is true.
-    values: {field name: value}. A missing or empty field gets the value. A field with a different value is changed only if replace is true, else it is a conflict.
+    values: {field name: value}. A missing or empty field (see is_empty) gets the value. A field with a different value is changed only if replace is true, else it is a conflict.
     A missing field is added as a copy of the field 'after' (same position, hidden state, font) with the new name and value.
     Returns (new text, number of changed fields, conflicts as (field name, old value, new value))."""
     edits, conflicts = [], []
@@ -92,7 +97,7 @@ def set_fields(text, match, values, after, replace=False):
         for name, value in values.items():
             if name in props:
                 old, s, _ = props[name]
-                if old.strip() and old != value and not replace:
+                if not is_empty(old) and old != value and not replace:
                     conflicts.append((name, old, value))
                 elif old != value:
                     m = _PROPERTY.match(text, s)

@@ -1,124 +1,29 @@
 # Lessons
 
-One entry per finding: symptom, cause, proof, fix. Newest last. Reference an entry by its id (L01, ...).
-Source project: path or repository and commit.
+General design principles for all projects, one bullet per entry, at most 100 entries (`hwkit lessons check lessons.md`).
+At the limit, compress: merge, abstract, or move entries to `lessons-archive.md` (no size limit). Never delete a lesson without a copy in the archive.
+Not here: tool failures and workarounds (fix the tool, or write a helper), project-specific decisions (project `DESIGN.md` or `AGENTS.md`).
 
-## L01 Inlaid labels: strokes too narrow
-- Symptom: labels with gaps after slicing, all nozzles 0.2 to 0.6 mm.
-- Cause: Arial Bold 3–4 mm has strokes of approx. 0.5 mm.
-- Proof: morphological opening with 2 × nozzle removes whole strokes.
-- Fix: `hwkit.labels.check_label()`; Arial Black 7–10 mm for a 0.6 mm nozzle.
-- Source: 44.006 Chopper Frequency Doubling Circuit, 2026-10-22.
+## Verification
 
-## L02 Inlaid labels: letter spacing and counters too narrow
-- Symptom: neighbouring glyphs merge; islands of body material inside glyphs stay empty.
-- Cause: font spacing < 2 × nozzle; counters approx. 1.4 mm.
-- Fix: `hwkit.labels.text()` places glyphs `min_gap` apart; gap rule `min_gap = 2 × nozzle + 0.3 mm`.
-- Source: 44.006, 2026-10-22.
+- Report a result at the level of its evidence. A slice analysis gives "slice verified", a DRC gives "DRC clean"; only a test of the built part shows that it works.
+- Do not attribute a defect to a user action before the file content or a measurement shows it.
+- Verify a setting in the output file (G-code header, Gerber, order file), not only in the input. Tools can apply settings differently in the GUI and on the command line.
+- A tool that fails without a message is not a pass. Use a test input that must fail, and confirm that it fails.
 
-## L03 3MF from CadQuery: mesh without shared vertices
-- Symptom: slicer fills label regions with distorted shapes.
-- Cause: `Shape.tessellate()` gives each face its own vertices; the slicer repairs the "open" mesh. trimesh merges vertices on load and reports watertight.
-- Fix: `hwkit.bambu.project.indexed_mesh()`. STL is not affected.
-- Source: 44.006, 2026-10-22.
+## Electronics
 
-## L04 Classic wall generator leaves gaps in narrow strokes
-- Symptom: stroke = one wall loop + broken gap infill.
-- Cause: stroke width not a multiple of the line width.
-- Proof: layer-1 gaps > 0.2 mm 6.3 mm² (classic) → 1.5 mm² (Arachne), one filament.
-- Fix: per-object `wall_generator = arachne` (`INLAY_OBJECT_SETTINGS`).
-- Source: 44.006, 2026-10-22.
+- Check devices with polarity or pin order (diodes, electrolytic capacitors, transistors, connectors) against the datasheet, the symbol and the footprint.
+- Order from distributors by distributor part number, not by MPN. One MPN has several packaging variants (cut tape, reel), and the upload tools select one.
 
-## L05 Elephant-foot compensation opens a gap at label boundaries
-- Cause: label and body contours shrink separately on layer 1.
-- Proof: with Arachne, gaps 1.5 → 0.03 mm² (one filament).
-- Fix: per-object `elefant_foot_compensation = 0`.
-- Source: 44.006, 2026-10-22.
+## Mechanics and printing
 
-## L06 Command line does not resolve preset inheritance
-- Fix: `hwkit.bambu.presets.flatten()` merges the `inherits` chain.
-- Source: 44.006, 2026-10-22.
+- Clearances of printed fits are at least 2 × layer height. Printed surfaces move to layer boundaries, by up to half a layer each.
+- Put mating and stop surfaces of printed parts on layer boundaries.
+- Print a test piece of a critical feature (snap hook, press fit) before the full part.
+- Printed features are at least 2 × nozzle diameter wide, also gaps between them.
+- Check each coordinate frame transform against a physical reference, for example the side of a connector. Frames can be mirrored.
 
-## L07 Start G-code is in separate template files
-- Symptom: flat preset has generic start G-code (homing, purge line at 205 °C, no `M620`); a project made from it carries that G-code.
-- Cause: `<preset> template <key>.json` files are not in the `inherits` chain.
-- Proof: after the fix, all `*_gcode` keys equal a GUI-saved project.
-- Fix: `load_preset()` applies the template files; `make_template()` checks the G-code keys.
-- Source: 44.006, 2026-10-22.
+## Files
 
-## L08 Filament order per layer
-- Symptom: layer 1 prints body before labels.
-- Cause: default order minimises filament changes.
-- Fix: plate `first_layer_print_sequence = "2 1"` (space-separated; `"2,1"` has no effect), `other_layers_print_sequence = "2 <n> 2 1"`, `other_layers_print_sequence_nums = "1"`. Effect on quality not measured.
-- Source: 44.006, 2026-10-22.
-
-## L09 Generated file overwritten, or overwrites a user file
-- Symptom: a project in `out/` changed outside the generator; origin unknown.
-- Fix: `hwkit.outputs.OutputGuard`. Keep user-saved projects in a commit of their own.
-- Source: 44.006, 2026-10-22.
-
-## L10 Project 3MF needs project_settings.config with correct list lengths
-- Symptom: CLI segmentation fault, or "Failed slicing", or "Flush volumes matrix do not match to the correct size!".
-- Cause: missing `Metadata/project_settings.config`; per-filament lists with one entry; flush matrix not n × n.
-- Fix: `make_template()`. Per-filament keys: `filament_*`, all keys of the filament presets, `default_filament_colour`, `pre_start_fan_time`.
-- Source: 44.006, 2026-10-22.
-
-## L11 GUI ignores project values not listed in different_settings_to_system
-- Symptom: project has gyroid, GUI shows grid.
-- Cause: GUI applies only listed keys over the system preset (CLI uses the project value in both cases).
-- Fix: `make_template()` lists each preset key of `lab.process.choices`. Confirmed in the GUI by the user.
-- Source: 44.006, 2026-10-22.
-
-## L12 Preset arguments replace project settings in the CLI
-- Symptom: verification slice used grid while the project had gyroid.
-- Fix: verify in project mode (`slice_file()` without `profiles_dir`); compare the G-code header (`check_gcode_settings()`).
-- Source: 44.006, 2026-10-22.
-
-## L13 G-code parsing
-- G2/G3 arcs must be interpolated.
-- Filament change = `M620 S<n>A` (n from 0; 255 = unload). `T1000`, `T1100` are toolhead commands.
-- Exclude prime tower and skirt; with several objects, restrict to the object region before the alignment.
-- Source: 44.006, 2026-10-22.
-
-## L14 Claims about print results
-- A CLI slice and a G-code analysis give "slice verified", not "prints correctly". Only a print shows quality.
-- Do not attribute a defect to a user action before the file content proves it.
-- Source: 44.006, 2026-10-22.
-
-## L15 KiCad top-view frame is left-handed with z up
-- Symptom: connectors mirrored in the case (IN/OUT swapped) if the README frame is used directly.
-- Fix: build the case in the STEP frame rotated 180° about z (`hwkit.fit.kicad_rotated_frame()`, `hwkit.render.kicad_glb_matrix()`).
-- Source: 44.006, 2026-10-22.
-
-## L16 Blender background render
-- Freestyle needs a lineset with a linestyle, else a Python error in each render.
-- KiCad GLB is in metres in the STEP frame.
-- Source: 44.006, 2026-10-22.
-
-## L17 Snap hook does not latch
-- Symptom: weak snap; hooks stop short of the windows; lid pulls off without pressing the hooks.
-- Cause: vertical latch clearance (hook retention face to window top) 0.1 mm, layer height 0.3 mm. The lid stop surfaces and the latch surfaces are rounded to layer boundaries; each of the 4 surfaces can move by up to ½ layer. Overhang sag of the window top and of the retention face adds to this.
-- Proof: G-code (0.3 mm layers): base shoulder at z = 8.9 mm, lid skirt bottom at z = 8.8 mm (design 8.75 mm both). The lid sits 0.1 mm high; this is the full clearance. Overhang sag not measured.
-- Fix: vertical latch clearance ≥ 2 × layer height. Check with `hwkit.fit.report(..., latches=..., latch_margin=2 × layer height)`. Put the latch and stop surfaces on layer boundaries of their part.
-- Source: 44.006, print 2026-10-22.
-
-## L18 DigiKey upload selects the wrong packaging
-- Symptom: lines show a tape-and-reel number (`-2-ND`, `TR-ND`) with "Menge nicht in ausgewählter Verpackungsart verfügbar", or the MPN with "Duplikat der Herstellerteilenummer". Customer Reference empty.
-- Cause: the upload searched by the MPN column, not by the DigiKey part number column. An MPN has several packaging variants (cut tape, reel, Digi-Reel). Fields with commas (`"74HCT132D,653"`, `"J1,J2"`) are a further risk.
-- Proof: file with columns DigiKey PN (`CT-ND` only), MPN, quantity: 50 % of the lines failed, with reel numbers that were not in the file. File with DigiKey PN only: all lines accepted.
-- Fix: `hwkit.kicad.export.write_order_files` writes `Digi-Key Part Number,Quantity,Customer Reference`, no MPN column, no commas in fields. Symbol field `DigiKey PN` with the cut-tape variant.
-- Source: 44.006, 2026-10-23.
-
-## L19 PartsBox MCP server (nickweedon/partsbox_mcp)
-- Symptom: `create_project` with entries makes an empty project; `add_project_entries` returns HTTP 400.
-- Cause: the server sends `project/entries`; the API key is `entries` (partsbox.com/api.html, project/create and project/add-entries).
-- Fix: `patches/partsbox_mcp-entries-key.patch` (create, add-entries, update-entries).
-- Symptom: `get_part_stock` returns 0 for parts with stock. `get_part_storage` gives the correct on-hand quantity.
-- Source: 44.006, 2026-10-23.
-
-## L20 DigiKey API: sandbox app
-- Symptom: `POST https://api.digikey.com/v1/oauth2/token` returns 401 "Invalid clientId". On `sandbox-api.digikey.com` the token works, but `products/v4/search/keyword` returns 403 "not authorized to perform this request".
-- Cause: the app was made in the DigiKey sandbox, and the sandbox app has no ProductInformation V4 access. Production and sandbox apps have separate client IDs.
-- Proof: same client ID and secret: 401 on production, token on sandbox, 403 on the sandbox product search.
-- Fix: on developer.digikey.com make a production app with "ProductInformation V4". `hwkit.distributors.DigiKey` uses the sandbox only with `sandbox = true`.
-- Source: 44.005, 2026-10-23.
+- Never overwrite a file that a human can have changed after it was generated. Detect changes with hashes.

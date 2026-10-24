@@ -9,8 +9,10 @@ Reusable processes for hardware projects, for use by a human and an LLM agent.
 | :--- | :--- |
 | `src/hwkit/` | Python package and command line `hwkit` |
 | `skills/` | Claude Code skills: procedures and acceptance criteria |
-| `lessons.md` | Failure modes with cause, proof and fix (L01, ...) |
+| `lessons.md` | General design principles, at most 100 |
+| `lessons-archive.md` | Removed and older lessons |
 | `lab/profile.toml` | Lab equipment and defaults |
+| `src/hwkit/fab/` | PCB process rules (`.kicad_dru`) |
 | `AGENTS.md` | Entry point for agents other than Claude Code |
 | `tests/` | Tests |
 
@@ -28,8 +30,10 @@ Other agents: see `AGENTS.md`.
 Python package in a project (pin a tag):
 
 ```sh
-uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.1.0"
+uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.6.0"
 ```
+
+KiCad projects: start from the project template `kicad-prj-template`. Its Makefile calls `hwkit` (`make help`).
 
 ## Example
 
@@ -68,8 +72,10 @@ Agent use: ask Claude Code for "a case for this KiCad board" or "prepare the pri
 
 ```sh
 hwkit lab show
-hwkit kicad check <project.kicad_pro>
-hwkit kicad outputs <project.kicad_pro> --out outputs --boards <n>
+hwkit kicad init|fab-rules|import-part|check|outputs|order-files|fill-distributors|prices ...
+hwkit readme update|check README.md --project <project.kicad_pro> --prices <prices.csv> --boards <n>
+hwkit partsbox stock|project <project.kicad_pro>
+hwkit lessons check lessons.md
 hwkit bambu flatten --out build/bambu-profiles
 hwkit bambu template --profiles build/bambu-profiles --out bambu-project-settings.json
 hwkit bambu verify <project.3mf> --labels <labels.stl> --body <body.stl> --out build/verify

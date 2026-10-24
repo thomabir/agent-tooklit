@@ -5,7 +5,7 @@ description: Prepare and verify a Bambu Studio print project (3MF) from CadQuery
 
 # Bambu print preparation
 
-Toolkit: `github.com/thomabir/agent-tooklit`, local `~/code/agent-toolkit` (package `hwkit`). Lab equipment: `lab/profile.toml` (`hwkit lab show`). Failure modes: `lessons.md`.
+Toolkit: `github.com/thomabir/agent-tooklit`, local `~/code/agent-toolkit` (package `hwkit`). Lab equipment: `lab/profile.toml` (`hwkit lab show`).
 
 ## Setup in a project
 - `uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@<tag>"` (pin a tag).
@@ -23,10 +23,10 @@ Toolkit: `github.com/thomabir/agent-tooklit`, local `~/code/agent-toolkit` (pack
 ## Verify
 `hwkit bambu verify <project.3mf> --labels <labels.stl> --body <body.stl> --out build/verify`
 
-Report the printed values. Pass = "slice verified: all criteria met". This is not a print result (L14).
-After a change of the project format, ask the user to confirm key values in the GUI (L11).
+Report the printed values. Pass = "slice verified: all criteria met". This is not a print result.
+After a change of the project format, ask the user to confirm key values in the GUI. The GUI applies only the keys in `different_settings_to_system`.
 
 ## Do not
-- Verify with preset arguments (L12).
+- Verify with preset arguments: they replace the project settings.
 - Edit the project template by hand.
-- Overwrite a file that `OutputGuard` reports as changed; ask the user (L09).
+- Overwrite a file that `OutputGuard` reports as changed; ask the user.

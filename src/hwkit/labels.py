@@ -1,7 +1,7 @@
 """Inlaid multi-material labels on a flat face that prints on the build plate.
 
 Rules: every stroke >= 2 nozzle diameters, every gap (counters, letter spacing) >= min_gap.
-check_label() tests this with a morphological opening and the Hausdorff distance. See lessons.md (L01, L02).
+check_label() tests this with a morphological opening and the Hausdorff distance.
 """
 
 import math
