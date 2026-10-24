@@ -5,7 +5,7 @@ description: KiCad PCB project workflow (project template, checks, outputs, READ
 
 # KiCad project
 
-Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kicad-prj-template`. Field names, author, project identifier pattern: `lab/profile.toml` section `[kicad]`.
+Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kicad-prj-template`. Field names, author, company, signature, project identifier pattern: `lab/profile.toml` section `[kicad]`.
 
 ## Principles
 - `make` runs all deterministic steps (`make help`). Use the targets; do not do their work by hand.
@@ -19,7 +19,7 @@ Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kic
 
 ## New project
 1. Copy the template. Ask the user for the identifier and the title.
-2. `make init ID=PRJ-0123 TITLE='Name'`: file names, title blocks (`rev` 0.1, date, author), README title.
+2. `make init ID=PRJ-0123 TITLE='Name'`: file names = title (no identifier), title blocks and README title = identifier + title, `rev` 0.1, date, company.
 3. `make fab-rules` lists the process rules; `make fab-rules PROCESS=<name>` copies one. Ask the user for the process.
 
 ## Parts
@@ -45,7 +45,7 @@ These are not checked. Apply them unless the user decides otherwise.
 - Ground pour on the ground nets; ground pads connect to the pour.
 - Mounting holes from library `MountingHole`, near the corners, on an integer mm grid relative to the outline corner.
 - Rounded board corners: arcs between Edge.Cuts lines, or a rectangle with a corner radius.
-- Silkscreen: `${TITLE} v${REVISION} ${ISSUE_DATE}`, if there is space.
+- Silkscreen: `${TITLE} v${REVISION} ${ISSUE_DATE}` and the signature from the lab profile, if there is space.
 
 ## Check and outputs
 - `make outputs`: PDFs, renders, Gerbers, positions, BOM, iBOM, order files, README blocks. It skips the KiCad exports if the sources did not change.

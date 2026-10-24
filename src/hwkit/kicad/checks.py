@@ -18,8 +18,8 @@ def title_block(root):
     return {k: (sexp.value(tb, k, "") if tb is not None else "") for k in TITLE_KEYS}
 
 
-def check_title_blocks(blocks, author=None, id_pattern=None):
-    """blocks: {file name: title block dict}. Fields filled, version Major.Minor, ISO date, author in company, title starts with the project identifier (regular expression id_pattern), all files equal."""
+def check_title_blocks(blocks, id_pattern=None):
+    """blocks: {file name: title block dict}. Fields filled, version Major.Minor, ISO date, title starts with the project identifier (regular expression id_pattern), all files equal."""
     lines, issues = [], []
     first = next(iter(blocks.values()))
     lines.append(f"title block ({len(blocks)} files): " + ", ".join(f"{k}={first[k]!r}" for k in TITLE_KEYS))
@@ -33,8 +33,6 @@ def check_title_blocks(blocks, author=None, id_pattern=None):
             issues.append(f"{name}: rev {tb['rev']!r} is not Major.Minor")
         if tb["date"] and not DATE_RE.match(tb["date"]):
             issues.append(f"{name}: date {tb['date']!r} is not YYYY-MM-DD")
-        if author and tb["company"] and tb["company"] != author:
-            issues.append(f"{name}: company {tb['company']!r} is not the author {author!r}")
     for k in TITLE_KEYS:
         values = {tb[k] for tb in blocks.values()}
         if len(values) > 1:

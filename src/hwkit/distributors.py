@@ -86,6 +86,12 @@ def _same_manufacturer(schematic_name, distributor_name):
     return bool(words) and words[0] in distributor_name.lower()
 
 
+def _link(url):
+    """Link with a scheme. The APIs give some links without one (example: '//mm.digikey.com/...')."""
+    url = (url or "").strip()
+    return "https:" + url if url.startswith("//") else url
+
+
 def _breaks(rows, qty_key, price_key):
     found = sorted((int(b[qty_key]), float(b[price_key])) for b in rows if b.get(price_key) not in (None, ""))
     return tuple(found)
@@ -157,7 +163,7 @@ class DigiKey(Distributor):
             stock=int(v.get("QuantityAvailableforPackageType") or 0),
             breaks=_breaks(v.get("StandardPricing") or [], "BreakQuantity", "UnitPrice"),
             currency=self.currency,
-            datasheet=p.get("DatasheetUrl") or "",
+            datasheet=_link(p.get("DatasheetUrl")),
         )
         return offer, status
 
@@ -192,7 +198,7 @@ class Mouser(Distributor):
             stock=int(p.get("AvailabilityInStock") or 0),
             breaks=_breaks(breaks, "Quantity", "Price"),
             currency=self.currency,
-            datasheet=p.get("DataSheetUrl") or "",
+            datasheet=_link(p.get("DataSheetUrl")),
         )
         return offer, p.get("LifecycleStatus") or ""
 

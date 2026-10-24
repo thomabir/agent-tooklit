@@ -30,7 +30,7 @@ Other agents: see `AGENTS.md`.
 Python package in a project (pin a tag):
 
 ```sh
-uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.7.0"
+uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.7.1"
 ```
 
 KiCad projects: start from the project template `kicad-prj-template`. Its Makefile calls `hwkit` (`make help`).
@@ -86,8 +86,8 @@ hwkit bambu slice|check-project|check-gcode ...
 
 ```sh
 uv run --group dev pytest                    # unit tests
-sh tests/reference_check.sh <project folder>               # flatten, template, verify against the reference project
-uv run python tests/reference_render.py <project folder>   # render of the reference project
+sh tests/reference_check.sh <project folder>               # flatten, template, verify against a reference project
+uv run python tests/reference_render.py <project folder>   # render of a reference project
 ```
 
 Reference check pass: template identical to the reference template, "slice verified: all criteria met". Run it after a Bambu Studio update.

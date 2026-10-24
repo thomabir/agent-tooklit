@@ -48,6 +48,12 @@ def rename(pro, name):
     new = pro.with_name(name + ".kicad_pro")
     data = json.loads(new.read_text())
     data.setdefault("meta", {})["filename"] = new.name
+    for sheet in data.get("schematic", {}).get("top_level_sheets", []):  # KiCad 10: root sheet file
+        if sheet.get("filename") == pro.stem + ".kicad_sch":
+            sheet["filename"], sheet["name"] = name + ".kicad_sch", name
+    for sheet in data.get("sheets", []):
+        if len(sheet) == 2 and sheet[1] == pro.stem:
+            sheet[1] = name
     new.write_text(json.dumps(data, indent=2) + "\n")
     return new
 

@@ -51,9 +51,25 @@ def test_embed_models(tmp_path):
 
 
 def test_rename(tmp_path):
-    pro = setup.rename(_project(tmp_path), "PRJ-0001")
-    assert sorted(p.name for p in tmp_path.iterdir()) == ["PRJ-0001.kicad_pcb", "PRJ-0001.kicad_pro", "PRJ-0001.kicad_sch"]
-    assert json.loads(pro.read_text())["meta"]["filename"] == "PRJ-0001.kicad_pro"
+    pro = _project(tmp_path)
+    data = json.loads(pro.read_text())
+    data["schematic"] = {"top_level_sheets": [{"filename": "template.kicad_sch", "name": "template", "uuid": "u"}]}
+    data["sheets"] = [["u", "template"]]
+    pro.write_text(json.dumps(data))
+    pro = setup.rename(pro, "Quad Cell Amplifier")
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["Quad Cell Amplifier.kicad_pcb", "Quad Cell Amplifier.kicad_pro", "Quad Cell Amplifier.kicad_sch"]
+    data = json.loads(pro.read_text())
+    assert data["meta"]["filename"] == "Quad Cell Amplifier.kicad_pro"
+    assert data["schematic"]["top_level_sheets"][0] == {"filename": "Quad Cell Amplifier.kicad_sch", "name": "Quad Cell Amplifier", "uuid": "u"}
+    assert data["sheets"] == [["u", "Quad Cell Amplifier"]]
+
+
+def test_link():
+    from hwkit.distributors import _link
+
+    assert _link("//mm.digikey.com/a.pdf") == "https://mm.digikey.com/a.pdf"
+    assert _link("https://x/a.pdf") == "https://x/a.pdf"
+    assert _link(None) == ""
 
 
 def test_fab_rules(tmp_path, monkeypatch):

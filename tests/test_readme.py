@@ -77,5 +77,7 @@ def test_bom_block_without_prices():
     assert "No price: R1 R2." in block
 
 
-def test_board_summary():
-    assert "| 0.1 | 2026-10-24 | 40.0 mm × 30.0 mm | 1.60 mm | 2 |" in report.board_summary(PCB, ["F.Cu", "B.Cu"])
+def test_version_block():
+    block = report.version_block(PCB, "Demo Board", "pcb")
+    assert "| 0.1 | 2026-10-24 | [Schematic](pcb/docs/Demo%20Board-schematic.pdf) " in block
+    assert "[Gerbers](pcb/manufacturing/Demo%20Board-v0.1-gerbers.zip)" in block

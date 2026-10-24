@@ -14,6 +14,35 @@ BOARD_PDF_LAYERS = ("F.SilkS", "B.SilkS", "F.Fab", "B.Fab")
 GERBER_LAYERS = ("F.Mask", "B.Mask", "F.Paste", "B.Paste", "F.SilkS", "B.SilkS", "Edge.Cuts")
 DIGIKEY_HEADER = ["Digi-Key Part Number", "Quantity", "Customer Reference"]
 STOCK_FILE = "stock.csv"
+# Board renders. Basic quality: high quality casts shadows on the transparent background.
+# The zoom keeps parts that extend past the board edge (connectors) in the image; crop_to_content() removes the empty border.
+RENDER_ARGS = ["--quality", "basic", "--zoom", "0.6", "--width", "2400", "--height", "1800"]
+RENDER_VIEWS = {"top": ["--side", "top"], "bottom": ["--side", "bottom"], "iso": ["--side", "top", "--rotate", "-40,0,30"]}
+RENDER_MARGIN = 20  # px
+
+
+def crop_to_content(png, margin=RENDER_MARGIN):
+    """Crop a PNG with a transparent background to its opaque pixels, with a margin."""
+    from PIL import Image
+
+    image = Image.open(png)
+    box = image.getchannel("A").getbbox() if "A" in image.getbands() else None
+    if box is None:
+        return
+    left, top, right, bottom = box
+    image.crop((max(left - margin, 0), max(top - margin, 0), min(right + margin, image.width), min(bottom + margin, image.height))).save(png)
+
+
+def schematic_svg(cli, project, docs):
+    """Root sheet as SVG, for the README. kicad-cli writes <sheet name>.svg into a folder."""
+    tmp = docs / "svg"
+    if tmp.exists():
+        shutil.rmtree(tmp)
+    _run([cli, "sch", "export", "svg", "--exclude-drawing-sheet", "-o", tmp, project.sch])
+    svg = docs / f"{project.name}-schematic.svg"
+    shutil.move(next(tmp.glob("*.svg")), svg)
+    shutil.rmtree(tmp)
+    return svg
 
 
 class Project:
@@ -212,10 +241,11 @@ def export_all(lab, project, out, fields, boards, rev):
     board_pdf = docs / f"{project.name}-board.pdf"
     layers = project.copper_layers() + list(BOARD_PDF_LAYERS)
     _run([cli, "pcb", "export", "pdf", "--mode-multipage", "--include-border-title", "--layers", ",".join(layers), "--common-layers", "Edge.Cuts", "-o", board_pdf, project.pcb])
-    written += [sch_pdf, board_pdf]
-    for side in ("top", "bottom"):
-        png = docs / f"{project.name}-{side}.png"
-        _run([cli, "pcb", "render", "--side", side, "--quality", "high", "-o", png, project.pcb])
+    written += [sch_pdf, board_pdf, schematic_svg(cli, project, docs)]
+    for view, args in RENDER_VIEWS.items():
+        png = docs / f"{project.name}-{view}.png"
+        _run([cli, "pcb", "render", *args, *RENDER_ARGS, "-o", png, project.pcb])
+        crop_to_content(png)
         written.append(png)
 
     gerbers = fab / "gerbers"

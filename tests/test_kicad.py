@@ -46,9 +46,9 @@ def test_board_outline_and_zones():
 
 def test_title_blocks():
     good = {"title": "Demo", "rev": "1.0", "date": "2026-10-22", "company": "A. Author"}
-    assert checks.check_title_blocks({"a": good, "b": dict(good)}, "A. Author")[1] == []
+    assert checks.check_title_blocks({"a": good, "b": dict(good)})[1] == []
     bad = dict(good, rev="v1", date="22.10.2026")
-    issues = checks.check_title_blocks({"a": good, "b": bad}, "A. Author")[1]
+    issues = checks.check_title_blocks({"a": good, "b": bad})[1]
     assert any("Major.Minor" in i for i in issues)
     assert any("YYYY-MM-DD" in i for i in issues)
     assert any("differs" in i for i in issues)

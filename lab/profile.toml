@@ -10,7 +10,9 @@ ibom = "/Users/thomabir/Documents/KiCad/10.0/3rdparty/plugins/org_openscopeproje
 label_font = "/System/Library/Fonts/Supplemental/Arial Black.ttf"
 
 [kicad]
-author = "Thomas Birbacher"  # title block field "company"
+author = "Thomas Birbacher"
+company = "ETH Zürich"  # title block field "company"
+signature = "ThoBir ETHZ"  # author and company, short form for the silkscreen
 id_pattern = "^[A-Z]{3}-\\d{4} "  # project identifier at the start of the title, example "PRJ-0123 "
 
 # Symbol field names. Roles: manufacturer, mpn, datasheet (link), digikey (link), digikey_pn (DigiKey part number, the only part number in the DigiKey order file), mouser (link), mouser_pn (Mouser part number, the only part number in the Mouser order file).

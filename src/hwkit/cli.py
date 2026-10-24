@@ -3,6 +3,7 @@
 import argparse
 import datetime
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -82,10 +83,10 @@ def _kicad_init(a, lab):
     from .kicad.export import Project
     from .kicad.setup import rename, set_title_block
 
-    pro = rename(a.project, a.name or a.id)
+    pro = rename(a.project, a.name or a.title)
     project = Project(pro)
     title = f"{a.id} {a.title}"
-    values = {"title": title, "date": datetime.date.today().isoformat(), "rev": a.rev, "company": lab["kicad"]["author"]}
+    values = {"title": title, "date": datetime.date.today().isoformat(), "rev": a.rev, "company": lab["kicad"]["company"]}
     for f in [*project.sheets(), project.pcb]:
         f.write_text(set_title_block(f.read_text(), values))
         print(f"title block: {f}")
@@ -123,7 +124,7 @@ def _kicad_check(a, lab):
     pcb = sexp.load(project.pcb)
     blocks[project.pcb.name] = checks.title_block(pcb)
     results = [
-        checks.check_title_blocks(blocks, k.get("author"), k.get("id_pattern")),
+        checks.check_title_blocks(blocks, k.get("id_pattern")),
         checks.check_board(pcb),
         check_fab_rules(lab, project, work),
         checks.check_bom(bom(lab, project, work / "bom.csv", k["fields"]), k["fields"]),
@@ -232,8 +233,9 @@ def _readme_contents(a, lab):
     project = _project(a)
     pcb = sexp.load(project.pcb)
     rows = _placed_rows(lab, project, a.work)
+    outputs = os.path.relpath(project.pro.resolve().parent.parent, Path(a.readme).resolve().parent)  # template layout: pcb/kicad/<project>.kicad_pro, outputs in pcb/
     return {
-        "titleblock": report.board_summary(pcb, project.copper_layers()),
+        "titleblock": report.version_block(pcb, project.name, Path(outputs).as_posix()),
         "bom": report.bom_block(rows, lab["kicad"]["fields"], Prices(a.prices), a.boards, pcb),
     }
 
@@ -269,7 +271,6 @@ def _readme_check(a, lab):
 
 def _partsbox_stock(a, lab):
     from . import partsbox
-
     from .kicad.export import STOCK_FILE, write_order_against_stock, write_stock
 
     fields = lab["kicad"]["fields"]
@@ -356,7 +357,7 @@ def main(argv=None):
     _project_arg(c)
     c.add_argument("--id", required=True, help="project identifier, example PRJ-0123")
     c.add_argument("--title", required=True, help="title without the identifier")
-    c.add_argument("--name", help="file name of the project; default: the identifier")
+    c.add_argument("--name", help="file name of the project; default: the title (the identifier is only in the title blocks and the README)")
     c.add_argument("--rev", default="0.1")
     c.add_argument("--readme", help="README to set the level 1 heading in")
     c.set_defaults(func=_kicad_init)

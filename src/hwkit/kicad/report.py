@@ -1,18 +1,23 @@
-"""README blocks from a KiCad project: title block data, board size, BOM with prices, part count."""
+"""README blocks from a KiCad project: version with release files, BOM with prices, part count."""
+
+from urllib.parse import quote
 
 from ..readme import table
 from . import sexp
-from .checks import Outline, title_block
+from .checks import title_block
 from .export import merge_by_part
 
 
-def board_summary(pcb_root, copper_layers):
+def release_files(name, rev):
+    """(label, path relative to the outputs folder) of the files that a reader of the README opens."""
+    return [("Schematic", f"docs/{name}-schematic.pdf"), ("Board", f"docs/{name}-board.pdf"), ("Gerbers", f"manufacturing/{name}-v{rev}-gerbers.zip"), ("iBOM", f"bom/{name}-ibom.html")]
+
+
+def version_block(pcb_root, name, outputs):
+    """Version, date and links to the release files. outputs: outputs folder relative to the README, as a URL path."""
     tb = title_block(pcb_root)
-    x0, y0, x1, y1 = Outline(pcb_root).bbox()
-    thickness = sexp.value(sexp.child(pcb_root, "general") or ["general"], "thickness", "")
-    header = ["Version", "Date", "Board size", "Thickness", "Copper layers"]
-    row = [tb["rev"], tb["date"], f"{x1 - x0:.1f} mm × {y1 - y0:.1f} mm", f"{float(thickness):.2f} mm" if thickness else "", str(len(copper_layers))]
-    return table(header, [row])
+    links = " ".join(f"[{label}]({quote(f'{outputs}/{path}')})" for label, path in release_files(name, tb["rev"]))
+    return table(["Version", "Date", "Files"], [[tb["rev"], tb["date"], links]])
 
 
 def _attrs(fp):

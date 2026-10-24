@@ -97,13 +97,25 @@ def camera_for(objects, direction):
     return cam
 
 
+def content_columns(pixels, margin):
+    """Columns of an image that differ from the background (median of the border pixels; render noise is below the threshold), with a margin on each side."""
+    import numpy as np
+
+    border = np.concatenate([pixels[0], pixels[-1], pixels[:, 0], pixels[:, -1]])
+    used = np.flatnonzero((np.abs(pixels - np.median(border, axis=0)).max(axis=2) > 0.15).any(axis=0))
+    if used.size == 0:
+        return pixels
+    return pixels[:, max(used[0] - margin, 0) : min(used[-1] + 1 + margin, pixels.shape[1])]
+
+
 def contact_sheet(paths, out_path):
     import numpy as np
 
     images = [bpy.data.images.load(str(p)) for p in paths]
     w, h = images[0].size
-    sheet = np.concatenate([np.array(i.pixels[:], dtype=np.float32).reshape(h, w, 4) for i in images], axis=1)
-    out = bpy.data.images.new("sheet", width=w * len(images), height=h, alpha=True)
+    margin = h // 20
+    sheet = np.concatenate([content_columns(np.array(i.pixels[:], dtype=np.float32).reshape(h, w, 4), margin) for i in images], axis=1)
+    out = bpy.data.images.new("sheet", width=sheet.shape[1], height=h, alpha=True)
     out.pixels = sheet.ravel()
     out.filepath_raw = str(out_path)
     out.file_format = "PNG"
