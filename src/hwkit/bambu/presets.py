@@ -1,6 +1,10 @@
 """Flat Bambu presets for the command line, and the project settings template.
 
-See lessons.md (L06, L07, L10, L11, L12).
+- The command line does not resolve the "inherits" chain of a preset: flatten() merges it.
+- Start G-code and other long values are in "<preset> template <key>.json" files outside the "inherits" chain: load_preset() applies them.
+- A project 3MF needs Metadata/project_settings.config with one list entry per filament for all per-filament keys and an n × n flush matrix, else the command line stops (segmentation fault, "Failed slicing").
+- The GUI applies only the project keys listed in different_settings_to_system over the system preset: make_template() lists each key of lab.process.choices.
+- Preset arguments on the command line replace the project settings: verify in project mode (slice_file() without profiles_dir).
 """
 
 import glob

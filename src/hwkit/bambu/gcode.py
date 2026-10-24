@@ -1,4 +1,10 @@
-"""Analysis of the first layers of a Bambu G-code file. See lessons.md (L13, L14)."""
+"""Analysis of the first layers of a Bambu G-code file.
+
+- G2/G3 arcs are interpolated.
+- Filament change: "M620 S<n>A" (n from 0; 255 = unload). T1000 and T1100 are toolhead commands.
+- Prime tower and skirt are excluded; with several objects, the analysis is restricted to the object region before the alignment.
+- A result is "slice verified", not a print result.
+"""
 
 import math
 import re

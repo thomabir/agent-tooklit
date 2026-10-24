@@ -1,6 +1,6 @@
 [project]
 name = "hwkit"
-version = "0.5.1"
+version = "0.6.0"
 description = "Reusable hardware-project processes: enclosures, inlaid labels, Bambu Studio print projects, slicer checks, renders."
 requires-python = ">=3.11,<3.13"
 dependencies = [
@@ -11,6 +11,7 @@ dependencies = [
     "scipy>=1.11",
     "matplotlib>=3.8",
     "numpy>=1.26",
+    "zstandard>=0.22",
 ]
 
 [project.scripts]

@@ -14,7 +14,7 @@ HEAD = f'<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:la
 
 
 def indexed_mesh(shape, tolerance=0.01, angular_tolerance=0.1):
-    """(vertices, triangles) with one vertex per position. tessellate() gives each face its own vertices; see lessons.md (L03)."""
+    """(vertices, triangles) with one vertex per position. tessellate() gives each face its own vertices, and the slicer then "repairs" the mesh as open."""
     verts, tris = shape.tessellate(tolerance, angular_tolerance)
     index, unique, remap = {}, [], []
     for v in verts:
@@ -28,7 +28,7 @@ def indexed_mesh(shape, tolerance=0.01, angular_tolerance=0.1):
 
 
 def label_first_plate_settings(label_depth, project_settings, label_filament, body_filament):
-    """Plate settings: on each layer with labels, the label filament prints first. See lessons.md (L08)."""
+    """Plate settings: on each layer with labels, the label filament prints first. The default order minimises filament changes and prints the body first."""
     first = float(project_settings["initial_layer_print_height"])
     other = float(project_settings["layer_height"])
     layers = 1 + max(0, math.ceil((label_depth - first) / other - 1e-9))

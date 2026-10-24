@@ -119,25 +119,25 @@ def merge_by_part(rows, fields):
     return list(merged.values())
 
 
-def digikey_pn(row, fields):
-    """DigiKey part number of a BOM line. The DigiKey order file has no MPN column: with an MPN, the DigiKey upload selects a packaging variant itself (often tape and reel) or reports a duplicate MPN (L18)."""
-    v = row.get(fields["digikey_pn"], "").strip()
+def distributor_pn(row, fields, role):
+    """Distributor part number of a BOM line (role digikey_pn or mouser_pn). The order files have no MPN column: with an MPN, the DigiKey upload selects a packaging variant itself (often tape and reel) or reports a duplicate MPN."""
+    v = row.get(fields[role], "").strip()
     if not v:
-        raise ValueError(f"{row['Refs']}: field '{fields['digikey_pn']}' is empty")
+        raise ValueError(f"{row['Refs']}: field '{fields[role]}' is empty")
     return v
 
 
 def write_order_files(rows, fields, boards, out_dir):
-    """Upload files for the DigiKey and Mouser BOM tools. DNP lines and lines with order quantity 0 are left out. Lines with the same part are merged (see merge_by_part). Quantity: see order_quantity."""
+    """Upload files for the DigiKey and Mouser BOM tools, by distributor part number only (Mouser upload not tested). DNP lines and lines with order quantity 0 are left out. Lines with the same part are merged (see merge_by_part). Quantity: see order_quantity. No field contains a comma."""
     rows = merge_by_part(rows, fields)
     vendors = {
         "digikey": (
             ["Digi-Key Part Number", "Quantity", "Customer Reference"],
-            lambda r, n: [digikey_pn(r, fields), n, r["Refs"].replace(",", " ")],
+            lambda r, n: [distributor_pn(r, fields, "digikey_pn"), n, r["Refs"].replace(",", " ")],
         ),
         "mouser": (
-            ["Customer Part Number", "Quantity", "Manufacturer", "Mfr Part Number", "Product Link"],
-            lambda r, n: [r["Refs"], n, r[fields["manufacturer"]], r[fields["mpn"]], r[fields["mouser"]]],
+            ["Mouser Part Number", "Quantity", "Customer Part Number"],
+            lambda r, n: [distributor_pn(r, fields, "mouser_pn"), n, r["Refs"].replace(",", " ")],
         ),
     }
     paths = []

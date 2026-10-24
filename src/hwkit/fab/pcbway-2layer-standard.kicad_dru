@@ -1,0 +1,32 @@
+(version 1)
+# process: pcbway-2layer-standard
+# PCBWay standard PCB, 2 layers, no extra cost. Source: https://www.pcbway.com/capabilities.html, read 2026-10-24.
+# Later rules take precedence over earlier rules.
+
+(rule "Track width"
+	(constraint track_width (min 0.1mm)))
+
+(rule "Clearance"
+	(constraint clearance (min 0.1mm)))
+
+# Holes below 0.2 mm or above 6.0 mm cost extra.
+(rule "Hole size"
+	(constraint hole_size (min 0.2mm) (max 6.0mm)))
+
+(rule "Annular ring"
+	(constraint annular_width (min 0.15mm)))
+
+(rule "Hole to hole"
+	(constraint hole_to_hole (min 0.41mm)))
+
+(rule "Via hole to via hole"
+	(condition "A.Type == 'Via' && B.Type == 'Via'")
+	(constraint hole_to_hole (min 0.28mm)))
+
+(rule "Copper to board edge"
+	(constraint edge_clearance (min 0.25mm)))
+
+(rule "Silkscreen text"
+	(layer "?.Silkscreen")
+	(constraint text_height (min 0.8mm))
+	(constraint text_thickness (min 0.15mm)))

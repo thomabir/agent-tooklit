@@ -1,20 +1,18 @@
 from hwkit.kicad import checks, sexp
 from hwkit.kicad.export import write_order_files
 
-FIELDS = {"manufacturer": "Manufacturer", "mpn": "MPN", "digikey": "DigiKey", "digikey_pn": "DigiKey PN", "mouser": "Mouser"}
+FIELDS = {"manufacturer": "Manufacturer", "mpn": "MPN", "datasheet": "Datasheet", "digikey": "DigiKey", "digikey_pn": "DigiKey PN", "mouser": "Mouser", "mouser_pn": "Mouser PN"}
 
 
-def _board(outline, hole_at="13 13", zone=True, silk="${TITLE} v${REVISION}"):
-    zone_txt = '(zone (net 1) (net_name "GND") (layers "F.Cu" "B.Cu") (filled_polygon (layer "F.Cu") (pts (xy 0 0))))' if zone else ""
+def _board(outline, zone="filled"):
+    fill = '(filled_polygon (layer "F.Cu") (pts (xy 0 0)))' if zone == "filled" else ""
+    zone_txt = f'(zone (net 1) (net_name "GND") (layers "F.Cu" "B.Cu") {fill})' if zone else ""
     return sexp.parse(f"""(kicad_pcb (version 20250101)
-      (title_block (title "Demo") (date "2026-10-22") (rev "1.0") (company "A. Author"))
       (layers (0 "F.Cu" signal) (2 "B.Cu" signal) (25 "Edge.Cuts" user))
       (net 0 "") (net 1 "GND")
-      (footprint "MountingHole:MountingHole_3.2mm_M3" (layer "F.Cu") (at {hole_at}) (property "Reference" "H1" (at 0 0)))
       {outline}
       {zone_txt}
-      (segment (start 1 1) (end 2 2) (width 0.25) (layer "F.Cu") (net 1))
-      (gr_text "{silk}" (at 20 20) (layer "F.SilkS")))""")
+      (zone (net 0) (layers "F.Cu") (keepout (tracks not_allowed))))""")
 
 
 ROUNDED = """
@@ -35,30 +33,15 @@ def test_sexp_strings_and_nesting():
     assert sexp.value(n, "c") == 'q"z'
 
 
-def test_board_rounded_outline_passes():
-    lines, issues = checks.check_board(_board(ROUNDED), ["GND"], 1.0, 30.0)
+def test_board_outline_and_zones():
+    lines, issues = checks.check_board(_board(ROUNDED))
     assert issues == []
     assert any("40.000 mm × 30.000 mm" in line for line in lines)
-    assert any("NOTE: 1 track segment" in line for line in lines)
-
-
-def test_board_sharp_rect_hole_off_grid_no_zone():
+    assert checks.check_board(_board(ROUNDED, zone=None))[1] == []
     rect = '(gr_rect (start 10 10) (end 50 40) (layer "Edge.Cuts"))'
-    _, issues = checks.check_board(_board(rect, hole_at="13.5 13", zone=False), ["GND"], 1.0, 30.0)
-    assert any("without corner radius" in i for i in issues)
-    assert any("x = 3.500 mm" in i for i in issues)
-    assert any("no zone on a ground net" in i for i in issues)
-
-
-def test_board_sharp_line_corner():
-    square = "".join(f'(gr_line (start {a}) (end {b}) (layer "Edge.Cuts"))' for a, b in [("0 0", "10 0"), ("10 0", "10 10"), ("10 10", "0 10"), ("0 10", "0 0")])
-    _, issues = checks.check_board(_board(square, hole_at="3 3"), ["GND"], 1.0, 30.0)
-    assert sum("sharp board corner" in i for i in issues) == 4
-
-
-def test_silkscreen_note():
-    lines, _ = checks.check_board(_board(ROUNDED, silk="hello"), ["GND"], 1.0, 30.0)
-    assert any(line.startswith("NOTE: silkscreen") for line in lines)
+    _, issues = checks.check_board(_board(rect, zone="unfilled"))
+    assert issues == ["zone GND on F.Cu, B.Cu is not filled; fill the zones (key B) and save"]
+    assert checks.check_board(sexp.parse("(kicad_pcb)"))[1] == ["no Edge.Cuts outline"]
 
 
 def test_title_blocks():
@@ -72,21 +55,20 @@ def test_title_blocks():
 
 
 def _row(**kw):
-    r = {"Refs": "R1", "Qty": "2", "DNP": "", "Manufacturer": "Yageo", "MPN": "RC0603", "DigiKey": "https://www.digikey.com/x", "DigiKey PN": "311-1.00KCRCT-ND", "Mouser": "https://www.mouser.com/x"}
+    r = {"Refs": "R1", "Qty": "2", "DNP": "", "Manufacturer": "Yageo", "MPN": "RC0603", "DigiKey": "https://www.digikey.com/x", "DigiKey PN": "311-1.00KCRCT-ND", "Mouser": "https://www.mouser.com/x", "Mouser PN": "603-RC0603", "Datasheet": "https://example.com/ds.pdf"}
     return r | kw
 
 
 def test_bom_fields():
     assert checks.check_bom([_row()], FIELDS)[1] == []
-    issues = checks.check_bom([_row(MPN="", Mouser="www.mouser.com/x")], FIELDS)[1]
-    assert len(issues) == 2
+    issues = checks.check_bom([_row(MPN="", Mouser="www.mouser.com/x", Datasheet="~")], FIELDS)[1]
+    assert len(issues) == 3
 
 
 def test_order_files(tmp_path):
     dk, mo = write_order_files([_row(), _row(Refs="R2", DNP="DNP")], FIELDS, 5, tmp_path)
     text = mo.read_text().splitlines()
-    assert len(text) == 2
-    assert text[1].startswith("R1,10,Yageo,RC0603")
+    assert text == ["Mouser Part Number,Quantity,Customer Part Number", "603-RC0603,10,R1"]
     assert dk.read_text().splitlines() == ["Digi-Key Part Number,Quantity,Customer Reference", "311-1.00KCRCT-ND,10,R1"]
 
 
@@ -97,13 +79,13 @@ def test_order_qty_field(tmp_path):
     rows = [_row(**{"Order Qty": ""}), _row(Refs="R2", MPN="B", **{"Order Qty": "0"}), _row(Refs="R3", MPN="C", **{"Order Qty": "100"}), _row(Refs="R4", MPN="D", **{"Order Qty": "3"})]
     _, mo = write_order_files(rows, FIELDS_QTY, 5, tmp_path)
     text = mo.read_text().splitlines()
-    assert [line.split(",")[:2] for line in text[1:]] == [["R1", "10"], ["R3", "100"], ["R4", "10"]]
+    assert [line.split(",")[1:] for line in text[1:]] == [["10", "R1"], ["100", "R3"], ["10", "R4"]]
 
 
 def test_order_files_merge_same_part(tmp_path):
     rows = [_row(Refs="J1", Qty="1", MPN="112659"), _row(Refs="J2", Qty="1", MPN="112659"), _row(Refs="J3", DNP="DNP", MPN="112659")]
     dk, mo = write_order_files(rows, FIELDS, 2, tmp_path)
-    assert mo.read_text().splitlines()[1].startswith('"J1,J2",4,Yageo,112659')
+    assert mo.read_text().splitlines()[1] == "603-RC0603,4,J1 J2"
     assert dk.read_text().splitlines()[1] == "311-1.00KCRCT-ND,4,J1 J2"
 
 

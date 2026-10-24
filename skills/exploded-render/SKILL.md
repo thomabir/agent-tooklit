@@ -15,5 +15,5 @@ render.exploded(lab.load(), "out", "render-exploded",
 
 - Parts in the assembled case frame; `z` = explode offset in mm.
 - Output: one PNG per view and `<name>.png` with all views side by side.
-- Look at the image before you report it. Check connector sides against the PCB (L15).
-- Failure modes: L16.
+- Look at the image before you report it. Check connector sides against the PCB: frames can be mirrored.
+- Blender Freestyle needs a lineset with a linestyle. The KiCad GLB is in metres in the STEP frame (`render.kicad_glb_matrix`).

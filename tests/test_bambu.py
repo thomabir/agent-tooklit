@@ -54,4 +54,4 @@ def test_missing_inlay_settings_reported(tmp_path):
 @pytest.mark.skipif(not Path(lab.load()["tools"]["bambu_profiles"]).exists(), reason="Bambu Studio not installed")
 def test_flat_machine_preset_has_printer_start_gcode():
     machine = presets.load_preset(lab.load(), "machine", lab.load()["printer"]["bambu_machine"])
-    assert "M620" in machine["machine_start_gcode"]  # L07: generic start G-code has no AMS load
+    assert "M620" in machine["machine_start_gcode"]  # generic start G-code has no AMS load

@@ -45,8 +45,18 @@ class Offer:
     mpn: str
     package: str
     stock: int
-    unit_price: float | None  # price at quantity 1
+    breaks: tuple  # ((quantity, unit price), ...), ascending quantity
     currency: str
+    datasheet: str = ""
+
+    def price_at(self, quantity):
+        """Unit price at an order quantity, or None if the quantity is below the first price break."""
+        prices = [p for q, p in self.breaks if q <= quantity]
+        return prices[-1] if prices else None
+
+    @property
+    def unit_price(self):
+        return self.price_at(1)
 
 
 class Distributor:
@@ -55,8 +65,8 @@ class Distributor:
     name = ""
     roles = {}
 
-    def lookup(self, manufacturer, mpn):
-        """Returns (offer or None, note)."""
+    def lookup(self, manufacturer, mpn, part_number=None):
+        """Returns (offer or None, note). part_number: distributor part number that selects the packaging variant."""
         raise NotImplementedError
 
 
@@ -75,14 +85,14 @@ def _same_manufacturer(schematic_name, distributor_name):
     return bool(words) and words[0] in distributor_name.lower()
 
 
-def _price_at_one(breaks, qty_key, price_key):
-    prices = [float(b[price_key]) for b in breaks if int(b[qty_key]) <= 1 and b.get(price_key) not in (None, "")]
-    return min(prices) if prices else None
+def _breaks(rows, qty_key, price_key):
+    found = sorted((int(b[qty_key]), float(b[price_key])) for b in rows if b.get(price_key) not in (None, ""))
+    return tuple(found)
 
 
 class DigiKey(Distributor):
     name = "digikey"
-    roles = {"digikey_pn": "part_number", "digikey": "url"}
+    roles = {"digikey_pn": "part_number", "digikey": "url", "datasheet": "datasheet"}
     API = "https://api.digikey.com"
     SANDBOX_API = "https://sandbox-api.digikey.com"  # for apps made in the DigiKey sandbox; the production API rejects their client ID
 
@@ -97,7 +107,12 @@ class DigiKey(Distributor):
     def _headers(self):
         if self._token is None:
             form = urllib.parse.urlencode({"client_id": self.client_id, "client_secret": self.client_secret, "grant_type": "client_credentials"}).encode()
-            self._token = _request(f"{self.api}/v1/oauth2/token", form, {"Content-Type": "application/x-www-form-urlencoded"})["access_token"]
+            try:
+                self._token = _request(f"{self.api}/v1/oauth2/token", form, {"Content-Type": "application/x-www-form-urlencoded"})["access_token"]
+            except RuntimeError as e:
+                if str(e).startswith("401"):
+                    raise RuntimeError(f"{e}\nA sandbox app has a different client ID and no product search: make a production app with 'ProductInformation V4' on developer.digikey.com.") from None
+                raise
         return {"X-DIGIKEY-Client-Id": self.client_id, "Authorization": f"Bearer {self._token}", "Content-Type": "application/json", **self.locale}
 
     def _products(self, mpn):
@@ -106,14 +121,17 @@ class DigiKey(Distributor):
         return (r.get("ExactMatches") or []) + (r.get("Products") or [])
 
     @staticmethod
-    def _variation(product):
-        """Packaging variation for small quantities: no full reel, lowest minimum order quantity, then most stock."""
-        variations = [v for v in product.get("ProductVariations") or [] if not any(p in v["PackageType"]["Name"] for p in REEL_PACKAGES)]
+    def _variation(product, part_number=None):
+        """Packaging variation: the one with part_number, else for small quantities: no full reel, lowest minimum order quantity, then most stock."""
+        variations = product.get("ProductVariations") or []
+        if part_number:
+            return next((v for v in variations if v["DigiKeyProductNumber"] == part_number), None)
+        variations = [v for v in variations if not any(p in v["PackageType"]["Name"] for p in REEL_PACKAGES)]
         if not variations:
             return None
         return min(variations, key=lambda v: (v.get("MinimumOrderQuantity") or 1, -(v.get("QuantityAvailableforPackageType") or 0)))
 
-    def lookup(self, manufacturer, mpn):
+    def lookup(self, manufacturer, mpn, part_number=None):
         found, seen = [], set()
         for p in self._products(mpn):
             key = (p["ManufacturerProductNumber"], p["Manufacturer"]["Name"])
@@ -125,9 +143,9 @@ class DigiKey(Distributor):
         if len(found) > 1:
             return None, "several products: " + ", ".join(f"{p['Manufacturer']['Name']} {p['ProductUrl']}" for p in found)
         p = found[0]
-        v = self._variation(p)
+        v = self._variation(p, part_number)
         if v is None:
-            return None, "only full-reel packaging"
+            return None, f"no variation {part_number}" if part_number else "only full-reel packaging"
         status = (p.get("ProductStatus") or {}).get("Status", "")
         offer = Offer(
             part_number=v["DigiKeyProductNumber"],
@@ -136,32 +154,34 @@ class DigiKey(Distributor):
             mpn=p["ManufacturerProductNumber"],
             package=v["PackageType"]["Name"],
             stock=int(v.get("QuantityAvailableforPackageType") or 0),
-            unit_price=_price_at_one(v.get("StandardPricing") or [], "BreakQuantity", "UnitPrice"),
+            breaks=_breaks(v.get("StandardPricing") or [], "BreakQuantity", "UnitPrice"),
             currency=self.currency,
+            datasheet=p.get("DatasheetUrl") or "",
         )
         return offer, status
 
 
 class Mouser(Distributor):
     name = "mouser"
-    roles = {"mouser": "url"}
+    roles = {"mouser_pn": "part_number", "mouser": "url"}
     API = "https://api.mouser.com/api/v1"
 
     def __init__(self, api_key, currency):
         self.api_key = api_key
         self.currency = currency
 
-    def lookup(self, manufacturer, mpn):
-        body = json.dumps({"SearchByPartRequest": {"mouserPartNumber": mpn, "partSearchOptions": "Exact"}}).encode()
+    def lookup(self, manufacturer, mpn, part_number=None):
+        body = json.dumps({"SearchByPartRequest": {"mouserPartNumber": part_number or mpn, "partSearchOptions": "Exact"}}).encode()
         r = _request(f"{self.API}/search/partnumber?apiKey={self.api_key}", body, {"Content-Type": "application/json"})
         if r.get("Errors"):
             raise RuntimeError(f"Mouser: {r['Errors']}")
         found = [p for p in (r.get("SearchResults") or {}).get("Parts") or [] if p["ManufacturerPartNumber"].upper() == mpn.upper() and _same_manufacturer(manufacturer, p["Manufacturer"])]
+        if part_number:
+            found = [p for p in found if p["MouserPartNumber"] == part_number]
         if not found:
             return None, "no exact MPN match"
         p = max(found, key=lambda p: int(p.get("AvailabilityInStock") or 0))
         breaks = [{"Quantity": b["Quantity"], "Price": re.sub(r"[^\d.]", "", b["Price"].replace(",", "."))} for b in p.get("PriceBreaks") or []]
-        price = _price_at_one(breaks, "Quantity", "Price")
         offer = Offer(
             part_number=p["MouserPartNumber"],
             url=p["ProductDetailUrl"],
@@ -169,14 +189,15 @@ class Mouser(Distributor):
             mpn=p["ManufacturerPartNumber"],
             package="",
             stock=int(p.get("AvailabilityInStock") or 0),
-            unit_price=price,
+            breaks=_breaks(breaks, "Quantity", "Price"),
             currency=self.currency,
+            datasheet=p.get("DataSheetUrl") or "",
         )
         return offer, p.get("LifecycleStatus") or ""
 
 
 def configured(lab):
-    """Distributors with credentials. Returns (distributors, notes about the missing ones)."""
+    """Distributors with credentials, in order of preference. Returns (distributors, notes about the missing ones)."""
     creds, cfg = load_credentials(), lab["distributors"]
     found, notes = [], []
     dk = creds.get("digikey", {})
