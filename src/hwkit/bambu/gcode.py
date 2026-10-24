@@ -8,6 +8,7 @@
 
 import math
 import re
+from pathlib import Path
 
 from shapely.affinity import translate
 from shapely.geometry import LineString, Polygon
@@ -36,7 +37,7 @@ def read_paths(gcode, n_layers):
     layers = []
     x = y = 0.0
     width, feature, filament = 0.6, "", 1
-    for line in open(gcode):
+    for line in Path(gcode).read_text().splitlines(keepends=True):
         if line.startswith("; CHANGE_LAYER"):
             if len(layers) == n_layers:
                 break
@@ -66,7 +67,7 @@ def read_paths(gcode, n_layers):
 def filament_sequence(gcode, n_events=7):
     """First filament changes and layer changes, as a list of "F<n>" and "|"."""
     events = []
-    for line in open(gcode):
+    for line in Path(gcode).read_text().splitlines(keepends=True):
         if line.startswith("; CHANGE_LAYER"):
             events.append("|")
         else:
@@ -118,14 +119,16 @@ def coverage(gcode, labels_stl, body_stl, region=None, layers=2, first_layer_hei
             g = footprint([p for p in paths if p[2] == f])
             per_filament[f] = {"inside_labels": g.intersection(labels).area, "outside_labels": g.difference(labels).area}
         missing = top.buffer(-edge_exclusion).difference(covered)
-        results.append({
-            "layer": k + 1,
-            "label_area": labels.area,
-            "label_not_covered": labels.difference(covered).area,
-            "top_not_covered": missing.area,
-            "gaps": missing.buffer(-gap_width / 2).area,
-            "per_filament": per_filament,
-        })
+        results.append(
+            {
+                "layer": k + 1,
+                "label_area": labels.area,
+                "label_not_covered": labels.difference(covered).area,
+                "top_not_covered": missing.area,
+                "gaps": missing.buffer(-gap_width / 2).area,
+                "per_filament": per_filament,
+            }
+        )
         plots.append((covered, missing, labels))
     if png:
         _plot(plots, png)

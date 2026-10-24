@@ -29,3 +29,7 @@ packages = ["src/hwkit"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "lab" = "hwkit/_lab"
+
+[tool.ruff]
+src = ["src"]
+line-length = 320

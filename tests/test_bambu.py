@@ -1,4 +1,3 @@
-import json
 import zipfile
 from pathlib import Path
 
@@ -35,7 +34,7 @@ def test_write_project_round_trip(tmp_path):
         {"name": "lid", "parts": [("lid", body, 1), ("labels", label, 2)], "settings": INLAY_OBJECT_SETTINGS, "center": (150, 128)},
     ]
     project.write_project(path, objects, project.label_first_plate_settings(0.6, SETTINGS, 2, 1), SETTINGS)
-    lines, issues = checks.check_project(path, plate_first_layer="2 1")
+    _, issues = checks.check_project(path, plate_first_layer="2 1")
     assert issues == []
     x0, x1, y0, y1 = checks.inlay_region(path)
     assert x0 < 150 < x1 and y0 < 128 < y1

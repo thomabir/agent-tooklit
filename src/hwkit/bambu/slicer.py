@@ -24,7 +24,7 @@ def slice_file(input_path, out_dir, lab, profiles_dir=None, process_json=None):
     cmd += ["--outputdir", str(out_dir), "--export-3mf", "sliced.3mf", str(input_path)]  # --export-3mf is relative to --outputdir
     log = out_dir / "log.txt"
     with open(log, "w") as f:
-        status = subprocess.run(cmd, cwd=out_dir, stdout=f, stderr=subprocess.STDOUT).returncode  # temporary files go into cwd
+        status = subprocess.run(cmd, check=False, cwd=out_dir, stdout=f, stderr=subprocess.STDOUT).returncode  # temporary files go into cwd
     text = log.read_text(errors="replace")
     m = re.findall(r"return_code=(-?\d+), error_message=([^,\n]*)", text)
     code, message = (int(m[-1][0]), m[-1][1]) if m else (None, "no return code in log")

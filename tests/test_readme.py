@@ -2,6 +2,7 @@ from hwkit import readme
 from hwkit.kicad import report, sexp
 from hwkit.prices import Prices, write
 
+
 def _template():
     out = ["# PRJ-0001 Demo", "<!-- BEGIN generated: bom -->", "<!-- END generated: bom -->"]
     for h2, h3 in readme.SECTIONS:
@@ -78,4 +79,3 @@ def test_bom_block_without_prices():
 
 def test_board_summary():
     assert "| 0.1 | 2026-10-24 | 40.0 mm × 30.0 mm | 1.60 mm | 2 |" in report.board_summary(PCB, ["F.Cu", "B.Cu"])
-
