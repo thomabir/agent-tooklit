@@ -5,7 +5,7 @@ description: KiCad PCB project workflow (project template, checks, outputs, READ
 
 # KiCad project
 
-Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kicad-prj-template`. Field names, author, company, signature, project identifier pattern: `lab/profile.toml` section `[kicad]`.
+Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kicad-project-template` (`https://github.com/thomabir/kicad-project-template`). Field names, author, company, signature, project identifier pattern: `lab/profile.toml` section `[kicad]`.
 
 ## Principles
 - `make` runs all deterministic steps (`make help`). Use the targets; do not do their work by hand.
@@ -15,30 +15,30 @@ Toolkit: `~/code/agent-toolkit` (package `hwkit`). Project template: `~/code/kic
 
 ## Layout
 - `pcb/kicad/`: source. `pcb/docs/`, `pcb/manufacturing/`, `pcb/bom/`: generated, committed. `pcb/build/`: deletable.
-- `pcb/manifest.json`: hashes of the sources of the outputs. `make check-pcb` reports outputs that are not up to date.
+- `pcb/manifest.json`: hashes of the sources of the outputs. `make check` reports outputs that are not up to date.
 
 ## New project
 1. Copy the template. Ask the user for the identifier and the title.
-2. `make new-project ID=PRJ-0123 TITLE='Name'`: file names = title (no identifier), title blocks and README title = identifier + title, `rev` 0.1, date, company.
-3. `make list-fab-rules` lists the process rules; `make copy-fab-rules PROCESS=<name>` copies one. Ask the user for the process.
+2. `make init ID=PRJ-0123 TITLE='Name'`: file names = title (no identifier), title blocks and README title = identifier + title, `rev` 0.1, date, company.
+3. `make rules` lists the process rules; `make rules PROCESS=<name>` copies one. Ask the user for the process.
 
 ## Parts
 - Every BOM symbol: Manufacturer, MPN, Datasheet, DigiKey, DigiKey PN, Mouser, Mouser PN. Optional: Notes (shown in the README BOM), Order Qty. Symbols without a physical part: "Exclude from BOM".
-- Symbol, footprint and 3D model: find the LCSC part number of the MPN, then `make import-part LCSC=C123456` (project library `parts`, STEP model embedded in the footprint, field `LCSC Part`). The search is an agent task; check that the LCSC part has the same MPN.
-- Distributor fields: `make show-distributor-fields` (dry run), `make write-distributor-fields`. An `ISSUE` line (no exact match, several products, only reels) needs a decision: select the part and write the field.
-- Prices: `make fetch-prices` writes `pcb/bom/prices.csv` (private, not tracked). Run it before a release and when parts change.
+- Symbol, footprint and 3D model: find the LCSC part number of the MPN, then `make part LCSC=C123456` (project library `parts`, STEP model embedded in the footprint, field `LCSC Part`). The search is an agent task; check that the LCSC part has the same MPN.
+- Distributor fields: `make parts-fill` (dry run), `make parts-fill WRITE=1`. An `ISSUE` line (no exact match, several products, only reels) needs a decision: select the part and write the field.
+- Prices: `make prices` writes `pcb/bom/prices.csv` (private, not tracked). Run it before a release and when parts change.
 - Order files: DigiKey and Mouser, by distributor part number only. The DigiKey upload is tested; the Mouser upload is not tested yet: check the column mapping on the first upload and update this skill.
 - Order Qty (non-negative integer): `0` = in stock, not ordered. `N` = order max(N, quantity × boards).
 
 ## Parts in stock
-`make fetch-stock` lists stock per BOM line, and candidates (same chip size and value) for lines that are not in stock. The decision is an agent task:
+`make stock` lists stock per BOM line, and candidates (same chip size and value) for lines that are not in stock. The decision is an agent task:
 - Use a stock part if its specification is the same or better for the circuit (value, package, voltage, dielectric, tolerance, temperature coefficient, power). A lower rating is acceptable if the circuit does not need it.
 - A better stock part in a higher price class (example: thin film for thick film): do not substitute.
 - Substitution: write the stock part into the symbol fields, `Order Qty` = `0`.
 - New jellybean part: `Order Qty` = a quantity worth a few USD.
 - `NOTE` lines about low stock: tell the user.
-- `make fetch-stock` also writes `pcb/bom/stock.csv` (on-hand quantity per exact MPN match) and `pcb/bom/order-digikey-against-stock.csv`: DigiKey order quantity minus the on-hand quantity, lines with no shortfall left out. `make export-pcb` writes this order file again while `stock.csv` exists. Both files are not tracked: they change with the stock.
-- After the order files are final: `make upload-partsbox-project` (ask the user first; it writes to PartsBox).
+- `make stock` also writes `pcb/bom/stock.csv` (on-hand quantity per exact MPN match) and `pcb/bom/order-digikey-against-stock.csv`: DigiKey order quantity minus the on-hand quantity, lines with no shortfall left out. `make pcb` writes this order file again while `stock.csv` exists. Both files are not tracked: they change with the stock.
+- After the order files are final: `make partsbox` (ask the user first; it writes to PartsBox).
 
 ## Design recommendations
 These are not checked. Apply them unless the user decides otherwise.
@@ -48,18 +48,18 @@ These are not checked. Apply them unless the user decides otherwise.
 - Silkscreen: `${TITLE} v${REVISION} ${ISSUE_DATE}` and the signature from the lab profile, if there is space.
 
 ## Check and outputs
-- `make export-pcb`: PDFs, renders, Gerbers, positions, BOM, iBOM, order files, README blocks. It skips the KiCad exports if the sources did not change.
-- `make check-pcb`: title blocks, outline, zones filled, process rules load, BOM fields, ERC, DRC, outputs and README up to date. Exit status 0 = no issues.
-- `BOARDS=n` (number of boards) applies to the targets marked `[BOARDS]` in `make help`. A change of `BOARDS` runs these targets again.
+- `make pcb`: PDFs, renders, Gerbers, positions, BOM, iBOM, order files, README blocks (and 3D STEP/GLB if the project has a case). It skips the KiCad exports if the sources did not change.
+- `make check`: title blocks, outline, zones filled, process rules load, BOM fields, ERC, DRC, outputs and README up to date (plus `case-fit` and `case-slice` if the project has a case). Exit status 0 = no issues.
+- `boards = n` in `pyproject.toml` (`[tool.hwkit]`) sets the number of boards (can also be overridden on the command line with `BOARDS=n`). A change of `boards` runs the affected targets again.
 - Fill the zones in KiCad (key B) and save before the check.
 - Commit the outputs and the README with the source files.
 
 ## README
 - Each section holds content, `TODO`, or `N/A: <reason>`. Never delete a section. Guidance is in HTML comments.
-- Generated blocks (`titleblock`, `bom`): never edit by hand.
+- Generated blocks (`titleblock`, `bom`): never edit by hand (`make readme` updates them).
 - The power budget and the design decisions come from the user. Propose text, do not invent values.
 
 ## Release
-1. `make check-release` without issues, everything committed.
+1. `make release` without issues, everything committed.
 2. Ask the user to confirm the version and the date in the title block.
 3. Tag `pcb-v<rev>-<date>`, then `gh release create pcb-v<rev>-<date> --title "<title> PCB v<rev> (<date>)"` with the Gerber archive, the position file, the PDFs and the BOM files. Ask the user before the push and the release.

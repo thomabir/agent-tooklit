@@ -33,7 +33,7 @@ Python package in a project (pin a tag):
 uv add "hwkit @ git+https://github.com/thomabir/agent-tooklit@v0.7.2"
 ```
 
-KiCad projects: start from the project template `kicad-prj-template`. Its Makefile calls `hwkit` (`make help`).
+KiCad projects: start from the project template [`kicad-project-template`](https://github.com/thomabir/kicad-project-template) (`~/code/kicad-project-template`). Its Makefile calls `hwkit` (`make help`).
 
 ## Example
 
