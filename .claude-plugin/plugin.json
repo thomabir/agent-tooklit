@@ -1,6 +1,6 @@
 {
   "name": "agent-toolkit",
-  "version": "0.7.4",
+  "version": "0.7.5",
   "description": "Hardware-project processes: KiCad project checks, outputs, README blocks, prices, process rules, LCSC part import, PartsBox stock and project BOM, enclosure design, Bambu print preparation and verification, exploded renders, retro.",
   "author": {"name": "Thomas Birbacher"}
 }
