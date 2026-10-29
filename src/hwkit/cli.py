@@ -290,7 +290,7 @@ def _partsbox_project(a, lab):
 
     project = _project(a)
     tb = checks.title_block(sexp.load(project.pcb))
-    name = a.name or f"{tb['title']} v{tb['rev']}"
+    name = a.name or partsbox.project_name(tb["title"], tb["rev"], project.pro)
     rows = _placed_rows(lab, project, a.work)
     pid, created = partsbox.sync_project(partsbox.Client(), name, rows, lab["kicad"]["fields"])
     print(f"PartsBox project '{name}' ({pid}): {'created' if created else 'entries replaced'}, {len(rows)} entries")
@@ -418,9 +418,9 @@ def main(argv=None):
     c.add_argument("--work", default="build/partsbox")
     c.add_argument("--out", help="BOM folder for stock.csv and order-digikey-against-stock.csv")
     c.set_defaults(func=_partsbox_stock)
-    c = pb.add_parser("project", help="create the PartsBox project '<title> v<rev>', or replace its entries with the BOM")
+    c = pb.add_parser("project", help="create the PartsBox project '<project number> <title> v<rev>', or replace its entries with the BOM")
     _project_arg(c)
-    c.add_argument("--name", help="project name; default: '<title> v<rev>'")
+    c.add_argument("--name", help="project name; default: '<project number> <title> v<rev>', project number from the project folder name")
     c.add_argument("--work", default="build/partsbox")
     c.set_defaults(func=_partsbox_project)
 

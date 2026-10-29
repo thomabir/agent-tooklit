@@ -180,8 +180,15 @@ def test_project_create_entries():
     assert (pid, created) == ("p1", True)
     op, params = client.calls[-1]
     assert op == "project/create"
+    assert params["project/description"] == ""
     assert params["entries"][0] == {"entry/quantity": 2, "entry/designators": ["R1", "R2"], "entry/order": 0, "entry/part-id": "a"}
     assert params["entries"][1]["entry/name"] == "OTHER"
+
+
+@pytest.mark.parametrize("folder, name", [("12.003 Demo Board/pcb", "12.003 Demo v1.0"), ("12.004_Demo-Board/pcb/kicad", "12.004 Demo v1.0"), ("Demo/pcb", "Demo v1.0")])
+def test_project_name(tmp_path, folder, name):
+    pro = tmp_path / folder / "Demo.kicad_pro"
+    assert partsbox.project_name("Demo", "1.0", pro) == name
 
 
 @pytest.mark.parametrize("category, ok", [("ok", True), ("status/ok", True), ("status/error", False)])

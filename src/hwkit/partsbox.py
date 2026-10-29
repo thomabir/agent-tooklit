@@ -17,6 +17,7 @@ OK_CATEGORIES = ("ok", "status/ok")  # partsbox.status/category of a successful 
 SI = {"p": 1e-12, "n": 1e-9, "u": 1e-6, "µ": 1e-6, "μ": 1e-6, "m": 1e-3, "": 1.0, "R": 1.0, "k": 1e3, "K": 1e3, "M": 1e6, "G": 1e9}
 _VALUE = re.compile(r"(?<![\w.])(\d+(?:\.\d+)?)\s*([pnuµμmRkKMG]?)(\d*)\s*(?:F|H|Ω|Ohm|ohm|R)?(?![\w])")
 _PACKAGE = re.compile(r"(?<!\d)(01005|0201|0402|0603|0805|1206|1210|1812|2010|2512)(?!\d)")
+_PROJECT_NUMBER = re.compile(r"^(\d+(?:\.\d+)+)[ _-]")
 
 
 def api_key():
@@ -68,6 +69,15 @@ def package(text):
     """Imperial chip size (0402, 0603, ...) in a footprint name or a text, or None."""
     m = _PACKAGE.search(text or "")
     return m.group(1) if m else None
+
+
+def project_name(title, rev, path):
+    """PartsBox project name '<project number> <title> v<rev>'. The project number is the number at the start of the nearest folder name above path ("12.003 Name" or "12.003_Name"); without it: '<title> v<rev>'."""
+    for folder in Path(path).resolve().parents:
+        m = _PROJECT_NUMBER.match(folder.name)
+        if m:
+            return f"{m.group(1)} {title} v{rev}"
+    return f"{title} v{rev}"
 
 
 def _same(a, b):
@@ -140,11 +150,14 @@ def entries(rows, fields, parts):
 
 
 def sync_project(client, name, rows, fields):
-    """Create the project, or replace all entries of the project with this name. Returns (project id, created)."""
+    """Create the project, or replace all entries of the project with this name. Returns (project id, created).
+
+    project/create needs project/description (the API reference marks it as optional); a new project gets an empty description.
+    """
     new = entries(rows, fields, client.parts())
     existing = [p for p in client.call("project/all") or [] if p.get("project/name") == name]
     if not existing:
-        pid = client.call("project/create", **{"project/name": name, "entries": new})["project/id"]
+        pid = client.call("project/create", **{"project/name": name, "project/description": "", "entries": new})["project/id"]
         return pid, True
     pid = existing[0]["project/id"]
     old = client.call("project/get-entries", **{"project/id": pid}) or []

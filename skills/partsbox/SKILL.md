@@ -9,7 +9,11 @@ Toolkit: `~/code/agent-toolkit`. Decision rules for stock parts: skill `kicad-pr
 
 ## Commands (project Makefile)
 - `make stock`: stock per BOM line (exact MPN match, on-hand quantity, low-stock level), candidates for the other lines. Writes `stock.csv` and `order-digikey-against-stock.csv` into the BOM folder (see skill `kicad-project`).
-- `make partsbox`: creates the project `<title> v<rev>`, or replaces all its entries with the BOM. Stock parts are linked by MPN; other lines are named entries (MPN, manufacturer and value in the comments). Ask the user before it runs.
+- `make partsbox`: creates the project (name: section "Naming"), or replaces all its entries with the BOM. Stock parts are linked by MPN; other lines are named entries (MPN, manufacturer and value in the comments). Ask the user before it runs.
+
+## Naming
+- Project name: `<project number> <title> v<rev>`, for example `12.003 Demo Board v1.0` for the folder `12.003 Demo Board`. The project number is the number at the start of the project folder name. Title and revision come from the KiCad title block.
+- Parts are linked parts. The API makes local parts only (`part/create`). After `part/create`, the user links each part in the PartsBox UI. The part ID, stock and description stay the same.
 
 ## API key (once per machine)
 The user writes `PARTSBOX_API_KEY=...` into `~/.partsbox/.env` (mode 600), from PartsBox Settings | Data. The agent never reads or prints the key.
