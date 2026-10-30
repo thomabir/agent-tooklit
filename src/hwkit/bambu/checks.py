@@ -89,10 +89,11 @@ def check_gcode_settings(gcode, project_path, extra_keys=()):
     header = _header(gcode)
     lines, issues = [], []
     for key in sorted(keys):
-        want = project.get(key)
-        want = ",".join(want) if isinstance(want, list) else str(want)
+        values = project.get(key)
+        values = values if isinstance(values, list) else [str(values)]
+        want = ",".join(values)
         used = header.get(key)
         lines.append(f"G-code {key}: {used} (project {want})")
-        if used != want:
+        if used != want and used not in values:  # the header has one value for each extruder variant in use
             issues.append(f"G-code {key} is {used}, project has {want}")
     return lines, issues

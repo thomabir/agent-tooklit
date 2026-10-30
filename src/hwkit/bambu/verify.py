@@ -3,14 +3,18 @@
 The result is a "slice verified" state, not a print result. See skills/bambu-print-prep/SKILL.md.
 """
 
+import json
+import zipfile
 from pathlib import Path
 
 from . import checks, gcode
+from .project import LABEL_LAYER_ACCELERATION, LABEL_LAYER_SPEED, label_layers
 from .slicer import slice_file
 
 MIN_LABEL_COVERAGE = 0.97  # fraction of label area covered by the label filament, layer 1
 MAX_BODY_IN_LABELS = 0.02  # fraction of label area covered by the body filament, layer 1
 MAX_GAPS = 3.0  # mm2, layer 1 gaps wider than the gap width
+FEED_RATE_TOLERANCE = 0.5  # mm/s, G-code feed rates are rounded to mm/min
 
 
 def verify(project, labels_stl, body_stl, out_dir, lab, label_filament=2, body_filament=1):
@@ -48,4 +52,13 @@ def verify(project, labels_stl, body_stl, out_dir, lab, label_filament=2, body_f
     if first["gaps"] > MAX_GAPS:
         issues.append(f"layer 1 gaps {first['gaps']:.2f} mm2 > {MAX_GAPS} mm2")
     print(f"coverage plot: {out_dir / 'coverage.png'}")
+
+    import trimesh
+
+    project_settings = json.loads(zipfile.ZipFile(project).read("Metadata/project_settings.config"))
+    n_layers = label_layers(round(float(trimesh.load(labels_stl).bounds[1][2]), 3), project_settings)
+    rates, accelerations = gcode.max_feed_rates(g, n_layers)
+    print(f"layers with labels (see project.slow_label_layers): largest extrusion feed rate {', '.join(f'{r:.0f}' for r in rates)} mm/s (limit {LABEL_LAYER_SPEED} mm/s), M201 limit {', '.join(f'{a:.0f}' for a in accelerations)} mm/s² (limit {LABEL_LAYER_ACCELERATION} mm/s²)")
+    issues += [f"layer {k} feed rate {r:.0f} mm/s > {LABEL_LAYER_SPEED} mm/s" for k, r in enumerate(rates, start=1) if r > LABEL_LAYER_SPEED + FEED_RATE_TOLERANCE]
+    issues += [f"layer {k} M201 limit {a:.0f} mm/s² > {LABEL_LAYER_ACCELERATION} mm/s²" for k, a in enumerate(accelerations, start=1) if a > LABEL_LAYER_ACCELERATION]
     return issues

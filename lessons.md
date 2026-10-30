@@ -19,6 +19,9 @@ Not here: tool failures and workarounds (fix the tool, or write a helper), proje
 ## Mechanics and printing
 
 - Clearances of printed fits are at least 2 × layer height. Printed surfaces move to layer boundaries, by up to half a layer each.
+- A clearance is play. A joint that must not move needs preload (a wedge face on a flexing part, or a spring), not a smaller clearance.
+- Print narrow features on the first layers slowly. Fast moves pull narrow lines from the plate.
+- For a print defect, check the simple causes first (clean build plate, filament dry, correct plate type) before you change the design or the settings. A defect at some plate positions only is a sign of a contaminated plate.
 - Put mating and stop surfaces of printed parts on layer boundaries.
 - Print a test piece of a critical feature (snap hook, press fit) before the full part.
 - Printed features are at least 2 × nozzle diameter wide, also gaps between them.

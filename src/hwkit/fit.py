@@ -47,10 +47,11 @@ def _overlap(a, b):
     return v.Volume() if v is not None else 0.0
 
 
-def report(base, lid, pcb, flexing=None, latches=None, latch_margin=0.0):
+def report(base, lid, pcb, flexing=None, latches=None, latch_margin=0.0, preloaded=None):
     """Print interference: assembled, PCB path into base, lid path onto base, latch clearance. flexing: lid features allowed to touch the base on the path (snap hooks).
 
     latches: lid hooks with a 90° retention face. With the lid latch_margin above its seat, they must not touch the base. Printed stop and latch surfaces move by up to half a layer each, so latch_margin >= 2 × layer height.
+    preloaded: lid features that overlap the base in the assembled state by design (preloaded 45° hooks), shown as expected. The lid must be in its seat, for example on the PCB.
     Returns the list of unexpected interferences.
     """
     if latch_margin < 0:
@@ -67,7 +68,11 @@ def report(base, lid, pcb, flexing=None, latches=None, latch_margin=0.0):
 
     check("assembled, base vs PCB", [(n, _overlap(base, s)) for n, s in pcb.items()])
     check("assembled, lid vs PCB", [(n, _overlap(lid, s)) for n, s in pcb.items()])
-    check("assembled, lid vs base", [("lid", _overlap(lid, base))])
+    if preloaded is None:
+        check("assembled, lid vs base", [("lid", _overlap(lid, base))])
+    else:
+        other = _overlap(lid.cut(preloaded), base)
+        check("assembled, lid vs base", [("preloaded features (expected)", _overlap(lid, base) - other), ("lid, other", other)])
     for dz in PATH_STEPS:
         check(f"PCB {dz} mm above seat vs base", [(n, _overlap(base, s.translate(cq.Vector(0, 0, dz)))) for n, s in pcb.items()])
     for dz in PATH_STEPS:

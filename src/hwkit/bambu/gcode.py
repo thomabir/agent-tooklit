@@ -64,6 +64,35 @@ def read_paths(gcode, n_layers):
     return layers
 
 
+def max_feed_rates(gcode, n_layers):
+    """(largest extrusion feed rate in mm/s, largest M201 X/Y machine acceleration limit in mm/s² at an extrusion) on each of the first n_layers. Prime tower and skirt are excluded."""
+    rates, limits = [], []
+    feature, feed, limit = "", 0.0, math.inf
+    for line in Path(gcode).read_text().splitlines():
+        if line.startswith("; CHANGE_LAYER"):
+            if len(rates) == n_layers:
+                break
+            rates.append(0.0)
+            limits.append(0.0)
+            continue
+        if line.startswith("M201 "):
+            xy = [float(v) for v in re.findall(r"[XY](-?[\d.]+)", line.split(";")[0])]
+            limit = max(xy) if xy else limit
+            continue
+        if line.startswith("; FEATURE:"):
+            feature = line.split(":", 1)[1].strip()
+            continue
+        if not line.startswith(("G1", "G2", "G3")):
+            continue
+        p = dict(re.findall(r"([XYEF])(-?[\d.]+)", line.split(";")[0]))
+        if "F" in p:
+            feed = float(p["F"]) / 60
+        if rates and float(p.get("E", 0)) > 0 and ("X" in p or "Y" in p) and not any(f in feature.lower() for f in EXCLUDED_FEATURES):
+            rates[-1] = max(rates[-1], feed)
+            limits[-1] = max(limits[-1], limit)
+    return rates, limits
+
+
 def filament_sequence(gcode, n_events=7):
     """First filament changes and layer changes, as a list of "F<n>" and "|"."""
     events = []

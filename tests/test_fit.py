@@ -28,3 +28,11 @@ def test_latch_margin_negative():
     h = hook(0.9)
     with pytest.raises(ValueError):
         report(wall_with_window(1.0), h, {}, latches=h, latch_margin=-0.1)
+
+
+@pytest.mark.parametrize(("preloaded", "expect_bad"), [(True, False), (False, True)])
+def test_preloaded_overlap_is_expected(preloaded, expect_bad):
+    h = hook(1.2)  # overlaps the window top at z = 1.0
+    lid = h.fuse(cq.Workplane("XY").box(10, 2, 1, centered=False).translate((0, 0, 40)).val())
+    bad = report(wall_with_window(1.0), lid, {}, flexing=h, preloaded=h if preloaded else None)
+    assert any("assembled, lid vs base" in b for b in bad) == expect_bad
